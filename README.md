@@ -38,9 +38,9 @@ npm run preview
 - W / A / S / D or arrow keys: move.
 - Shift: sprint.
 - Space: jump.
-- Mouse: rotate the camera. Click the canvas to enable pointer lock on desktop.
+- Mouse: rotate the camera. Click the canvas to enable pointer lock on desktop; drag to look if pointer lock is unavailable.
 - Esc: pause.
-- Mobile: use the on-screen direction and action buttons.
+- Mobile: hold the on-screen direction/action buttons; drag across the game view to rotate the camera.
 
 ## Geographic data
 
