@@ -16,7 +16,8 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
-type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; routeId: number; previousRouteId: number | null; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
+type TrafficVehicleKind = 'auto-rickshaw' | 'cng' | 'easybike' | 'motorcycle' | 'bus' | 'truck'
+type TrafficAgent = { root: THREE.Group; kind: TrafficVehicleKind; route: THREE.Vector3[]; routeId: number; previousRouteId: number | null; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -528,6 +529,77 @@ export class KhulnaGame {
     }
   }
 
+  private createTrafficVehicle(kind: TrafficVehicleKind, color: string): THREE.Group {
+    const root = new THREE.Group()
+    const paint = new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.08 })
+    const dark = new THREE.MeshStandardMaterial({ color: '#20272a', roughness: 0.82 })
+    const glass = new THREE.MeshStandardMaterial({ color: '#243c49', roughness: 0.3, metalness: 0.08 })
+    const trim = new THREE.MeshStandardMaterial({ color: '#d8d7c9', roughness: 0.5 })
+    const addBox = (w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material)
+      mesh.position.set(x, y, z)
+      root.add(mesh)
+      return mesh
+    }
+    const addWheel = (x: number, z: number, radius = 0.28) => {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 0.16, 10), dark)
+      wheel.rotation.z = Math.PI / 2
+      wheel.position.set(x, radius, z)
+      root.add(wheel)
+    }
+
+    if (kind === 'motorcycle') {
+      addWheel(0, 0.92, 0.29); addWheel(0, -0.88, 0.29)
+      addBox(0.32, 0.34, 0.95, paint, 0, 0.72, 0)
+      addBox(0.38, 0.16, 0.4, dark, 0, 0.94, -0.12)
+      addBox(0.08, 0.3, 0.08, trim, 0, 1.04, 0.53)
+      addBox(0.48, 0.1, 0.1, dark, 0, 1.15, 0.48)
+      // Simple rider silhouette makes the two-wheeler readable at game distance.
+      const rider = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), trim)
+      rider.position.set(0, 1.25, -0.08); root.add(rider)
+      addBox(0.34, 0.36, 0.3, dark, 0, 0.98, -0.08)
+    } else if (kind === 'auto-rickshaw') {
+      addWheel(-0.53, 0.88); addWheel(0.53, 0.88); addWheel(0, -0.9)
+      addBox(1.05, 0.48, 1.8, paint, 0, 0.58, 0)
+      addBox(0.92, 0.5, 0.75, glass, 0, 1.05, 0.48)
+      addBox(1.12, 0.12, 1.15, paint, 0, 1.37, -0.08)
+      addBox(0.08, 0.45, 0.08, dark, -0.46, 0.95, -0.1)
+      addBox(0.08, 0.45, 0.08, dark, 0.46, 0.95, -0.1)
+    } else if (kind === 'cng') {
+      addWheel(-0.55, 0.88); addWheel(0.55, 0.88); addWheel(0, -0.9)
+      addBox(1.12, 0.5, 1.9, paint, 0, 0.58, 0)
+      addBox(1.0, 0.55, 0.82, glass, 0, 1.1, 0.42)
+      addBox(1.18, 0.13, 1.2, paint, 0, 1.44, -0.08)
+      addBox(0.08, 0.42, 0.08, dark, -0.5, 0.96, -0.12)
+      addBox(0.08, 0.42, 0.08, dark, 0.5, 0.96, -0.12)
+      addBox(0.9, 0.12, 0.08, trim, 0, 0.62, 0.98)
+    } else if (kind === 'easybike') {
+      addWheel(-0.58, 0.92); addWheel(0.58, 0.92); addWheel(0, -0.92)
+      addBox(1.18, 0.35, 1.65, paint, 0, 0.5, 0)
+      addBox(1.15, 0.12, 1.55, trim, 0, 0.75, -0.02)
+      addBox(1.25, 0.12, 1.45, paint, 0, 1.22, -0.02)
+      addBox(0.08, 0.48, 0.08, dark, -0.52, 0.97, -0.58)
+      addBox(0.08, 0.48, 0.08, dark, 0.52, 0.97, -0.58)
+      addBox(1.05, 0.08, 0.08, dark, 0, 0.99, -0.58)
+      addBox(0.86, 0.42, 0.72, glass, 0, 0.91, 0.4)
+    } else if (kind === 'bus') {
+      addWheel(-0.68, 1.85, 0.34); addWheel(0.68, 1.85, 0.34)
+      addWheel(-0.68, -1.75, 0.34); addWheel(0.68, -1.75, 0.34)
+      addBox(1.72, 1.35, 4.7, paint, 0, 1.0, 0)
+      addBox(1.58, 0.58, 3.65, glass, 0, 1.48, -0.12)
+      addBox(1.74, 0.14, 0.65, paint, 0, 0.84, 2.0)
+      addBox(1.55, 0.12, 0.12, trim, 0, 0.48, 2.38)
+    } else if (kind === 'truck') {
+      addWheel(-0.66, 1.55, 0.34); addWheel(0.66, 1.55, 0.34)
+      addWheel(-0.66, -1.7, 0.34); addWheel(0.66, -1.7, 0.34)
+      addBox(1.65, 1.0, 1.35, paint, 0, 0.95, 1.05)
+      addBox(1.35, 0.58, 0.7, glass, 0, 1.35, 1.35)
+      addBox(1.7, 1.35, 2.6, trim, 0, 1.12, -0.95)
+      addBox(1.75, 0.12, 2.7, paint, 0, 1.82, -0.95)
+    }
+    return root
+  }
+
   private setupTraffic() {
     // Join road-way fragments whose endpoints meet closely. Reverse a fragment when
     // its far endpoint is the matching end; this creates longer continuous paths
@@ -573,23 +645,19 @@ export class KhulnaGame {
     if (!routes.length) return
     this.trafficRoutes = routes
     const count = Math.min(10, routes.length)
-    const bodyMat = new THREE.MeshStandardMaterial({ color: '#d9e0d8', roughness: 0.48, metalness: 0.12 })
-    const windowMat = new THREE.MeshStandardMaterial({ color: '#263b45', roughness: 0.25, metalness: 0.1 })
+    const kinds: TrafficVehicleKind[] = ['auto-rickshaw', 'cng', 'easybike', 'motorcycle', 'bus', 'truck']
+    const colors = ['#e6b94c', '#168b55', '#ed6a35', '#20252b', '#2475b8', '#c5c8c4']
     for (let i = 0; i < count; i++) {
       const route = routes[i]
-      const root = new THREE.Group()
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 3.05), bodyMat)
-      body.position.y = 0.57
-      root.add(body)
-      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.55, 1.35), windowMat)
-      cabin.position.set(0, 1.08, -0.1)
-      root.add(cabin)
+      const kind = kinds[i % kinds.length]
+      const root = this.createTrafficVehicle(kind, colors[i % colors.length])
       const routeLength = route.slice(1).reduce((sum, point, index) => sum + point.distanceTo(route[index]), 0)
       const segment = Math.max(0, Math.min(route.length - 2, Math.floor(i * (route.length - 1) / count)))
       const start = route[segment].clone()
       root.position.copy(start)
       this.scene.add(root)
-      this.traffic.push({ root, route, routeId: i, previousRouteId: null, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
+      const cruiseSpeed = kind === 'motorcycle' ? 5.2 : kind === 'bus' || kind === 'truck' ? 3.0 : kind === 'easybike' ? 2.5 : 3.6
+      this.traffic.push({ root, kind, route, routeId: i, previousRouteId: null, segment, progress: 0, speed: cruiseSpeed, cruiseSpeed, stopped: false })
       // Route data can include dense OSM vertices. Each agent advances segment by segment.
       void routeLength
     }
