@@ -83,7 +83,7 @@ export default function App() {
         </div>
         <div className="intro-stat">
           <span className="stat-label">CURRENT BUILD</span>
-          <strong>0.4 <span>ALPHA</span></strong>
+          <strong>0.5 <span>ALPHA</span></strong>
           <div className="stat-divider" />
           <span className="stat-label">MAP DATA</span>
           <strong className="map-stat">{mapSource === 'osm' ? 'OPENSTREETMAP' : mapSource === 'fallback' ? 'LOCAL PROTOTYPE' : 'LOADING…'}</strong>
@@ -107,7 +107,7 @@ export default function App() {
           <div className="game-vignette" />
           <div className="game-top-hud">
             <div className="location-pill"><MapPin size={13} /><span>KHULNA DISTRICT</span><i /></div>
-            <div className="build-pill">ALPHA 0.4</div>
+            <div className="build-pill">ALPHA 0.5</div>
           </div>
           <div className="crosshair" />
           <div className="game-bottom-hud">
@@ -117,7 +117,7 @@ export default function App() {
           {status === 'loading' && <div className="game-overlay"><div className="loader" /><strong>BUILDING THE CITY</strong><p>{message}</p></div>}
           {status === 'error' && <div className="game-overlay"><strong>3D VIEW UNAVAILABLE</strong><p>{message}</p><button className="secondary-button" onClick={() => window.location.reload()}><RotateCcw size={15} /> Reload game</button></div>}
           {paused && status === 'ready' && <div className="pause-overlay"><div className="pause-card"><span className="section-kicker">GAME PAUSED</span><h3>Take a breath.</h3><p>Your city is waiting.</p><button className="primary-button" onClick={startGame}><Play size={15} fill="currentColor" /> RESUME</button></div></div>}
-          {showHelp && <div className="help-panel"><button className="help-close" onClick={() => setShowHelp(false)}>×</button><strong>HOW TO PLAY</strong><p><b>W A S D</b> Move · <b>Mouse</b> Look · <b>Shift</b> Sprint · <b>Space</b> Jump · <b>V</b> Enter/exit car · <b>Esc</b> Pause</p><p>Near the parked car, press V or tap DRIVE. In car: W/S accelerate or reverse; A/D steer. Mobile players can use the direction pad and DRIVE button.</p></div>}
+          {showHelp && <div className="help-panel"><button className="help-close" onClick={() => setShowHelp(false)}>×</button><strong>HOW TO PLAY</strong><p><b>W A S D</b> Move · <b>Mouse</b> Look · <b>Shift</b> Sprint · <b>Space</b> Jump · <b>V</b> Enter/exit car · <b>Esc</b> Pause</p><p>Near the parked car, press V or tap DRIVE. In car: W/S accelerate or reverse; A/D steer; Space brake. Mobile players can use the direction pad and DRIVE button.</p></div>}
           <div className="desktop-hint"><span>W A S D</span> TO MOVE <i /> <span>MOUSE</span> TO LOOK</div>
           <div className="touch-controls">
             <div className="touch-pad" onContextMenu={e => e.preventDefault()}>
