@@ -74,7 +74,7 @@ export default function App() {
         <div className="intro-copy">
           <div className="eyebrow"><MapPin size={14} /> KHULNA, BANGLADESH</div>
           <h1>Your city.<br /><span>Your open world.</span></h1>
-          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints and available named landmarks.</p>
+          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints, named landmarks and a first drivable car prototype.</p>
           <div className="intro-actions">
             <button className="primary-button" onClick={startGame}><Play size={16} fill="currentColor" /> {paused ? 'RESUME GAME' : 'ENTER THE CITY'} <ArrowUpRight size={16} /></button>
             <button className="secondary-button" onClick={toggleFullscreen}><Expand size={16} /> FULLSCREEN</button>
@@ -83,7 +83,7 @@ export default function App() {
         </div>
         <div className="intro-stat">
           <span className="stat-label">CURRENT BUILD</span>
-          <strong>0.3 <span>ALPHA</span></strong>
+          <strong>0.4 <span>ALPHA</span></strong>
           <div className="stat-divider" />
           <span className="stat-label">MAP DATA</span>
           <strong className="map-stat">{mapSource === 'osm' ? 'OPENSTREETMAP' : mapSource === 'fallback' ? 'LOCAL PROTOTYPE' : 'LOADING…'}</strong>
@@ -107,7 +107,7 @@ export default function App() {
           <div className="game-vignette" />
           <div className="game-top-hud">
             <div className="location-pill"><MapPin size={13} /><span>KHULNA DISTRICT</span><i /></div>
-            <div className="build-pill">ALPHA 0.3</div>
+            <div className="build-pill">ALPHA 0.4</div>
           </div>
           <div className="crosshair" />
           <div className="game-bottom-hud">
@@ -117,14 +117,14 @@ export default function App() {
           {status === 'loading' && <div className="game-overlay"><div className="loader" /><strong>BUILDING THE CITY</strong><p>{message}</p></div>}
           {status === 'error' && <div className="game-overlay"><strong>3D VIEW UNAVAILABLE</strong><p>{message}</p><button className="secondary-button" onClick={() => window.location.reload()}><RotateCcw size={15} /> Reload game</button></div>}
           {paused && status === 'ready' && <div className="pause-overlay"><div className="pause-card"><span className="section-kicker">GAME PAUSED</span><h3>Take a breath.</h3><p>Your city is waiting.</p><button className="primary-button" onClick={startGame}><Play size={15} fill="currentColor" /> RESUME</button></div></div>}
-          {showHelp && <div className="help-panel"><button className="help-close" onClick={() => setShowHelp(false)}>×</button><strong>HOW TO PLAY</strong><p><b>W A S D</b> Move · <b>Mouse</b> Look around · <b>Shift</b> Sprint · <b>Space</b> Jump · <b>Esc</b> Pause</p><p>On mobile, use the on-screen joystick and action buttons.</p></div>}
+          {showHelp && <div className="help-panel"><button className="help-close" onClick={() => setShowHelp(false)}>×</button><strong>HOW TO PLAY</strong><p><b>W A S D</b> Move · <b>Mouse</b> Look · <b>Shift</b> Sprint · <b>Space</b> Jump · <b>V</b> Enter/exit car · <b>Esc</b> Pause</p><p>Near the parked car, press V or tap DRIVE. In car: W/S accelerate or reverse; A/D steer. Mobile players can use the direction pad and DRIVE button.</p></div>}
           <div className="desktop-hint"><span>W A S D</span> TO MOVE <i /> <span>MOUSE</span> TO LOOK</div>
           <div className="touch-controls">
             <div className="touch-pad" onContextMenu={e => e.preventDefault()}>
               <button aria-label="Move forward" onPointerDown={() => setTouch('KeyW', true)} onPointerUp={() => setTouch('KeyW', false)} onPointerLeave={() => setTouch('KeyW', false)}>▲</button>
               <div><button aria-label="Move left" onPointerDown={() => setTouch('KeyA', true)} onPointerUp={() => setTouch('KeyA', false)} onPointerLeave={() => setTouch('KeyA', false)}>◀</button><button aria-label="Move backward" onPointerDown={() => setTouch('KeyS', true)} onPointerUp={() => setTouch('KeyS', false)} onPointerLeave={() => setTouch('KeyS', false)}>▼</button><button aria-label="Move right" onPointerDown={() => setTouch('KeyD', true)} onPointerUp={() => setTouch('KeyD', false)} onPointerLeave={() => setTouch('KeyD', false)}>▶</button></div>
             </div>
-            <div className="touch-actions"><button onPointerDown={() => setTouch('ShiftLeft', true)} onPointerUp={() => setTouch('ShiftLeft', false)} onPointerLeave={() => setTouch('ShiftLeft', false)}>RUN</button><button onPointerDown={() => setTouch('Space', true)} onPointerUp={() => setTouch('Space', false)} onPointerLeave={() => setTouch('Space', false)}>JUMP</button></div>
+            <div className="touch-actions"><button onPointerDown={() => setTouch('ShiftLeft', true)} onPointerUp={() => setTouch('ShiftLeft', false)} onPointerLeave={() => setTouch('ShiftLeft', false)}>RUN</button><button onPointerDown={() => setTouch('Space', true)} onPointerUp={() => setTouch('Space', false)} onPointerLeave={() => setTouch('Space', false)}>JUMP</button><button onClick={() => setTouch('KeyV', true)}>DRIVE</button></div>
           </div>
         </div>
         <div className="game-caption"><span><i /> {mapSource === 'osm' ? 'REAL GEOGRAPHIC DATA LOADED' : 'EARLY PLAYABLE BUILD'}</span><span>MAP CACHE SAVED LOCALLY WHEN AVAILABLE</span></div>
