@@ -528,8 +528,47 @@ export class KhulnaGame {
   }
 
   private setupTraffic() {
-    // Low vehicle count for mobile performance. Routes use mapped major streets where available.
-    const routes = this.roadRoutes.filter(route => route.length >= 2)
+    // Join road-way fragments whose endpoints meet closely. Reverse a fragment when
+    // its far endpoint is the matching end; this creates longer continuous paths
+    // without teleporting vehicles between unrelated roads.
+    const fragments = this.roadRoutes.filter(route => route.length >= 2).map(route => route.map(p => p.clone()))
+    const routes: THREE.Vector3[][] = []
+    while (fragments.length) {
+      const chain = fragments.shift()!
+      let joined = true
+      while (joined) {
+        joined = false
+        const tail = chain[chain.length - 1]
+        let bestIndex = -1
+        let reverse = false
+        let bestDistance = 12
+        for (let i = 0; i < fragments.length; i++) {
+          const candidate = fragments[i]
+          const startDistance = tail.distanceTo(candidate[0])
+          const endDistance = tail.distanceTo(candidate[candidate.length - 1])
+          if (startDistance < bestDistance) {
+            bestDistance = startDistance
+            bestIndex = i
+            reverse = false
+          }
+          if (endDistance < bestDistance) {
+            bestDistance = endDistance
+            bestIndex = i
+            reverse = true
+          }
+        }
+        if (bestIndex >= 0) {
+          const next = fragments.splice(bestIndex, 1)[0]
+          if (reverse) next.reverse()
+          // Snap the new fragment's first point to the existing endpoint to avoid
+          // tiny gaps and keep position interpolation continuous.
+          next[0].copy(tail)
+          chain.push(...next.slice(1))
+          joined = true
+        }
+      }
+      if (chain.length >= 2) routes.push(chain)
+    }
     if (!routes.length) return
     const count = Math.min(10, routes.length)
     const bodyMat = new THREE.MeshStandardMaterial({ color: '#d9e0d8', roughness: 0.48, metalness: 0.12 })
