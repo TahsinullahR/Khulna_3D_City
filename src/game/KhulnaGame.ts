@@ -626,8 +626,13 @@ export class KhulnaGame {
     const speed = sprint ? 10 : 5.4
     if (this.vehicleMode) {
       const throttle = forward
-      this.vehicleSpeed += throttle * 11 * dt
-      if (throttle === 0) this.vehicleSpeed = THREE.MathUtils.damp(this.vehicleSpeed, 0, 1.7, dt)
+      const braking = this.keys.has('Space') || this.touchKeys.has('Space')
+      if (braking) {
+        this.vehicleSpeed = THREE.MathUtils.damp(this.vehicleSpeed, 0, 7.5, dt)
+      } else {
+        this.vehicleSpeed += throttle * (this.vehicleSpeed < 0 && throttle > 0 ? 19 : this.vehicleSpeed > 0 && throttle < 0 ? 18 : 11) * dt
+        if (throttle === 0) this.vehicleSpeed = THREE.MathUtils.damp(this.vehicleSpeed, 0, 1.7, dt)
+      }
       this.vehicleSpeed = THREE.MathUtils.clamp(this.vehicleSpeed, -7, 23)
       const steer = sideways
       const steerScale = Math.min(1, Math.abs(this.vehicleSpeed) / 3)
