@@ -8,7 +8,9 @@ This repository contains the first playable vertical slice:
 - Responsive website shell and embedded WebGL canvas.
 - Third-person placeholder character with movement, sprint, jump, and follow camera.
 - Keyboard/mouse controls and touch buttons for mobile browsers.
-- A bounded OpenStreetMap request for road geometry and building footprints around central Khulna.
+- A bounded OpenStreetMap request for road geometry, building footprints, mapped waterways, and tagged green areas around central Khulna.
+- Improved mapped road hierarchy, shoulder/edge treatment, and restrained center markings on wider roads.
+- Simple polygon surfaces for mapped parks/green areas and water bodies where OSM geometry exists.
 - A procedural fallback district if public map services are unavailable.
 - Basic building collision and renderer cleanup.
 
