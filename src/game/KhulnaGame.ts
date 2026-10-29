@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { ModelStreamer } from './ModelStreamer'
 
 export type GameStatus = 'loading' | 'ready' | 'paused' | 'error'
 type GameCallbacks = {
@@ -67,6 +68,7 @@ export class KhulnaGame {
   private lastPointer = { x: 0, y: 0 }
   private cameraTarget = new THREE.Vector3()
   private materials: THREE.Material[] = []
+  private modelStreamer: ModelStreamer | null = null
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.canvas = canvas
@@ -95,6 +97,7 @@ export class KhulnaGame {
         this.callbacks.onMessage('Map service unavailable; using the local playable prototype.')
       }
       this.setupTraffic()
+      this.modelStreamer = new ModelStreamer(this.scene)
       this.callbacks.onStatus('ready')
       this.resize()
       this.renderer?.render(this.scene, this.camera)
@@ -924,6 +927,7 @@ export class KhulnaGame {
   }
 
   private update(dt: number) {
+    this.modelStreamer?.update(this.vehicleMode ? this.vehicle.position : this.player.position)
     this.updateTraffic(dt)
     const forward = (this.keys.has('KeyW') || this.keys.has('ArrowUp') || this.touchKeys.has('KeyW') ? 1 : 0)
       - (this.keys.has('KeyS') || this.keys.has('ArrowDown') || this.touchKeys.has('KeyS') ? 1 : 0)
@@ -1053,6 +1057,8 @@ export class KhulnaGame {
     this.resizeObserver?.disconnect()
     this.cleanupEvents?.()
     if (document.pointerLockElement === this.canvas) void document.exitPointerLock()
+    this.modelStreamer?.dispose()
+    this.modelStreamer = null
     this.traffic = []
     this.roadRoutes = []
     this.scene.traverse(object => {
