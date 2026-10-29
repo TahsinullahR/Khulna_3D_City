@@ -16,6 +16,7 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
+type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -43,6 +44,8 @@ export class KhulnaGame {
   private keys = new Set<string>()
   private touchKeys = new Set<string>()
   private obstacles: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }> = []
+  private roadRoutes: THREE.Vector3[][] = []
+  private traffic: TrafficAgent[] = []
   private clock = new THREE.Clock()
   private raf = 0
   private paused = false
@@ -89,6 +92,7 @@ export class KhulnaGame {
         this.callbacks.onMapSource('fallback')
         this.callbacks.onMessage('Map service unavailable; using the local playable prototype.')
       }
+      this.setupTraffic()
       this.callbacks.onStatus('ready')
       this.resize()
       this.renderer?.render(this.scene, this.camera)
@@ -337,6 +341,11 @@ export class KhulnaGame {
 
       if (tags.highway || tags.waterway) {
         const highway = tags.highway || ''
+        if (tags.highway && coords.length >= 3 && ['primary','secondary','tertiary','residential','unclassified'].includes(highway)) {
+          const route = coords.map(point => new THREE.Vector3(point.x, 0, point.z))
+          const routeLength = route.slice(1).reduce((sum, point, i) => sum + point.distanceTo(route[i]), 0)
+          if (routeLength > 160 && route.every(point => Number.isFinite(point.x) && Number.isFinite(point.z))) this.roadRoutes.push(route)
+        }
         const width = tags.waterway ? (tags.waterway === 'river' ? 9 : 3.5)
           : highway === 'motorway' || highway === 'trunk' || highway === 'primary' ? 7.5
           : highway === 'secondary' ? 6 : highway === 'tertiary' ? 4.8
@@ -509,6 +518,79 @@ export class KhulnaGame {
       }
     }
     this.materials.push(asphalt, concrete, ...buildingMaterials)
+    // Use long fallback avenues as traffic routes when live map data is unavailable.
+    for (const z of [-90, -60, -30, 0, 30, 60, 90]) {
+      this.roadRoutes.push([new THREE.Vector3(-105, 0, z), new THREE.Vector3(105, 0, z)])
+    }
+    for (const x of [-90, -60, -30, 0, 30, 60, 90]) {
+      this.roadRoutes.push([new THREE.Vector3(x, 0, -105), new THREE.Vector3(x, 0, 105)])
+    }
+  }
+
+  private setupTraffic() {
+    // Low vehicle count for mobile performance. Routes use mapped major streets where available.
+    const routes = this.roadRoutes.filter(route => route.length >= 2)
+    if (!routes.length) return
+    const count = Math.min(10, routes.length)
+    const bodyMat = new THREE.MeshStandardMaterial({ color: '#d9e0d8', roughness: 0.48, metalness: 0.12 })
+    const windowMat = new THREE.MeshStandardMaterial({ color: '#263b45', roughness: 0.25, metalness: 0.1 })
+    for (let i = 0; i < count; i++) {
+      const route = routes[i]
+      const root = new THREE.Group()
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.55, 3.05), bodyMat)
+      body.position.y = 0.57
+      root.add(body)
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.55, 1.35), windowMat)
+      cabin.position.set(0, 1.08, -0.1)
+      root.add(cabin)
+      const routeLength = route.slice(1).reduce((sum, point, index) => sum + point.distanceTo(route[index]), 0)
+      const segment = Math.max(0, Math.min(route.length - 2, Math.floor(i * (route.length - 1) / count)))
+      const start = route[segment].clone()
+      root.position.copy(start)
+      this.scene.add(root)
+      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75 })
+      // Route data can include dense OSM vertices. Each agent advances segment by segment.
+      void routeLength
+    }
+  }
+
+  private updateTraffic(dt: number) {
+    for (const agent of this.traffic) {
+      let remaining = agent.speed * dt
+      let safety = 0
+      while (remaining > 0 && safety++ < 20) {
+        const from = agent.route[agent.segment]
+        const to = agent.route[agent.segment + 1]
+        if (!from || !to) {
+          agent.segment = 0
+          agent.progress = 0
+          continue
+        }
+        const distance = from.distanceTo(to)
+        if (distance < 0.1) {
+          agent.segment++
+          agent.progress = 0
+          if (agent.segment >= agent.route.length - 1) agent.segment = 0
+          continue
+        }
+        const available = distance - agent.progress
+        const travel = Math.min(remaining, available)
+        agent.progress += travel
+        remaining -= travel
+        const t = THREE.MathUtils.clamp(agent.progress / distance, 0, 1)
+        agent.root.position.lerpVectors(from, to, t)
+        const direction = to.clone().sub(from)
+        agent.root.rotation.y = Math.atan2(-direction.x, -direction.z)
+        if (agent.progress >= distance - 0.001) {
+          agent.segment++
+          agent.progress = 0
+          if (agent.segment >= agent.route.length - 1) agent.segment = 0
+        }
+      }
+      // Hide ambient traffic near the player's immediate footprint to reduce direct clipping.
+      const d = agent.root.position.distanceTo(this.vehicleMode ? this.vehicle.position : this.player.position)
+      agent.root.visible = d > 3.8
+    }
   }
 
   private installEvents() {
@@ -628,6 +710,7 @@ export class KhulnaGame {
   }
 
   private update(dt: number) {
+    this.updateTraffic(dt)
     const forward = (this.keys.has('KeyW') || this.keys.has('ArrowUp') || this.touchKeys.has('KeyW') ? 1 : 0)
       - (this.keys.has('KeyS') || this.keys.has('ArrowDown') || this.touchKeys.has('KeyS') ? 1 : 0)
     const sideways = (this.keys.has('KeyD') || this.keys.has('ArrowRight') || this.touchKeys.has('KeyD') ? 1 : 0)
@@ -756,6 +839,8 @@ export class KhulnaGame {
     this.resizeObserver?.disconnect()
     this.cleanupEvents?.()
     if (document.pointerLockElement === this.canvas) void document.exitPointerLock()
+    this.traffic = []
+    this.roadRoutes = []
     this.scene.traverse(object => {
       if (object instanceof THREE.Mesh) {
         object.geometry.dispose()
