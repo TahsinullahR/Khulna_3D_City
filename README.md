@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 13
+## Current milestone — Phase 14
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -158,3 +158,11 @@ Useful references:
 - It evaluates candidate direction alignment and prefers a route that continues the current heading with less abrupt turning; if no nearby candidate exists, the car stops instead of teleporting to a distant road.
 - The selected route endpoint is snapped to the current endpoint to bridge small map-data gaps. The vehicle then continues along that route.
 - Limitations: this is endpoint matching, not a full intersection graph. Roads crossing in the middle of an OSM way are not split into junction nodes; one-way rules, legal turn restrictions, lane selection, and collision physics are not modeled. The route heuristic can still choose a wrong connection.
+
+
+## Phase 14 route backtracking reduction
+
+- Traffic agents remember the route chain they arrived from.
+- At a route endpoint, route scoring adds a penalty to immediately returning to the previous chain, encouraging a different nearby continuation when one is available.
+- This penalty is a preference rather than a hard restriction, so a reverse connection can still be chosen if it is the best available option.
+- The behavior remains endpoint-based. It does not establish legal junction turns, split road crossings into nodes, or guarantee that the selected connection is a real drivable road.
