@@ -32,6 +32,9 @@ export class KhulnaGame {
   private scene = new THREE.Scene()
   private camera = new THREE.PerspectiveCamera(62, 1, 0.1, 6000)
   private player = new THREE.Group()
+  private vehicle = new THREE.Group()
+  private vehicleMode = false
+  private vehicleSpeed = 0
   private playerBody: THREE.Mesh | null = null
   private playerHead: THREE.Mesh | null = null
   private keys = new Set<string>()
@@ -160,7 +163,69 @@ export class KhulnaGame {
 
     this.player.position.set(0, 0, 0)
     this.scene.add(this.player)
+    this.setupVehicle()
     this.cameraTarget.set(0, 1.3, 0)
+  }
+
+  private setupVehicle() {
+    const paint = new THREE.MeshStandardMaterial({ color: '#b9d66d', metalness: 0.35, roughness: 0.38 })
+    const glass = new THREE.MeshStandardMaterial({ color: '#233943', metalness: 0.18, roughness: 0.25 })
+    const tire = new THREE.MeshStandardMaterial({ color: '#161b1d', roughness: 0.9 })
+    const hub = new THREE.MeshStandardMaterial({ color: '#aab5b3', metalness: 0.7, roughness: 0.28 })
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.62, 3.5), paint)
+    body.position.y = 0.72
+    this.vehicle.add(body)
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.72, 1.7), glass)
+    cabin.position.set(0, 1.28, -0.12)
+    this.vehicle.add(cabin)
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.2, 0.72), paint)
+    hood.position.set(0, 0.98, -1.27)
+    this.vehicle.add(hood)
+    const bumper = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.16, 0.14), hub)
+    bumper.position.set(0, 0.49, -1.78)
+    this.vehicle.add(bumper)
+    for (const x of [-0.94, 0.94]) {
+      for (const z of [-1.12, 1.12]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.18, 12), tire)
+        wheel.rotation.z = Math.PI / 2
+        wheel.position.set(x, 0.39, z)
+        this.vehicle.add(wheel)
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.19, 10), hub)
+        rim.rotation.z = Math.PI / 2
+        rim.position.copy(wheel.position)
+        this.vehicle.add(rim)
+      }
+    }
+    for (const x of [-0.56, 0.56]) {
+      const light = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.07), new THREE.MeshBasicMaterial({ color: '#fff1b8' }))
+      light.position.set(x, 0.78, -1.79)
+      this.vehicle.add(light)
+    }
+    this.vehicle.position.set(3.8, 0, 0)
+    this.scene.add(this.vehicle)
+  }
+
+  private setVehicleMode(enable: boolean) {
+    if (this.vehicleMode === enable) return
+    if (enable) {
+      const gap = this.vehicle.position.distanceTo(this.player.position)
+      if (gap > 6) {
+        this.callbacks.onMessage('Walk closer to the parked car to drive it (press V).')
+        return
+      }
+      this.player.position.copy(this.vehicle.position)
+      this.player.visible = false
+      this.vehicle.visible = true
+      this.vehicleMode = true
+      this.callbacks.onMessage('Driving mode: W/S accelerate or reverse, A/D steer. Press V to exit.')
+    } else {
+      const exitPoint = this.vehicle.position.clone().add(new THREE.Vector3(2.2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.vehicle.rotation.y))
+      if (!this.collides(exitPoint.x, exitPoint.z)) this.player.position.copy(exitPoint)
+      this.player.visible = true
+      this.vehicleMode = false
+      this.vehicleSpeed = 0
+      this.callbacks.onMessage('On foot: WASD move, Shift sprint, Space jump. Press V near the car to drive.')
+    }
   }
 
   private localPosition(lat: number, lon: number) {
@@ -439,6 +504,7 @@ export class KhulnaGame {
   private installEvents() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault()
+      if (event.code === 'KeyV' && !event.repeat && !this.paused) this.setVehicleMode(!this.vehicleMode)
       this.keys.add(event.code)
       if (event.code === 'Escape') {
         if (this.pointerLocked) void document.exitPointerLock()
@@ -507,6 +573,7 @@ export class KhulnaGame {
   private cleanupEvents: (() => void) | null = null
 
   setTouchKey(key: string, down: boolean) {
+    if (key === 'KeyV' && down && !this.paused) { this.setVehicleMode(!this.vehicleMode); return }
     if (down) this.touchKeys.add(key)
     else this.touchKeys.delete(key)
     if (key === 'Space' && down && this.grounded && !this.paused) {
@@ -557,6 +624,40 @@ export class KhulnaGame {
       - (this.keys.has('KeyA') || this.keys.has('ArrowLeft') || this.touchKeys.has('KeyA') ? 1 : 0)
     const sprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.touchKeys.has('ShiftLeft')
     const speed = sprint ? 10 : 5.4
+    if (this.vehicleMode) {
+      const throttle = forward
+      this.vehicleSpeed += throttle * 11 * dt
+      if (throttle === 0) this.vehicleSpeed = THREE.MathUtils.damp(this.vehicleSpeed, 0, 1.7, dt)
+      this.vehicleSpeed = THREE.MathUtils.clamp(this.vehicleSpeed, -7, 23)
+      const steer = sideways
+      const steerScale = Math.min(1, Math.abs(this.vehicleSpeed) / 3)
+      this.vehicle.rotation.y -= steer * steerScale * dt * (this.vehicleSpeed >= 0 ? 1.65 : -1.65)
+      const carDirection = new THREE.Vector3(Math.sin(this.vehicle.rotation.y), 0, -Math.cos(this.vehicle.rotation.y))
+      const next = this.vehicle.position.clone().addScaledVector(carDirection, this.vehicleSpeed * dt)
+      if (!this.collides(next.x, next.z) && !this.collides(next.x + 0.75, next.z) && !this.collides(next.x - 0.75, next.z)) {
+        this.vehicle.position.x = next.x
+        this.vehicle.position.z = next.z
+      } else {
+        this.vehicleSpeed = 0
+      }
+      this.player.position.copy(this.vehicle.position)
+      this.player.rotation.y = this.vehicle.rotation.y
+      this.velocity.set(carDirection.x * this.vehicleSpeed, 0, carDirection.z * this.vehicleSpeed)
+      const carCamera = new THREE.Vector3(
+        this.vehicle.position.x - Math.sin(this.vehicle.rotation.y) * 9,
+        this.vehicle.position.y + 4.3,
+        this.vehicle.position.z + Math.cos(this.vehicle.rotation.y) * 9,
+      )
+      this.camera.position.lerp(carCamera, 1 - Math.exp(-4.5 * dt))
+      this.cameraTarget.set(this.vehicle.position.x, 1.15, this.vehicle.position.z)
+      this.camera.lookAt(this.cameraTarget)
+      const now = performance.now()
+      if (now - this.lastSpeedEmit > 180) {
+        this.callbacks.onSpeed(Math.abs(this.vehicleSpeed) * 3.6)
+        this.lastSpeedEmit = now
+      }
+      return
+    }
     const input = new THREE.Vector3(sideways, 0, -forward)
     if (input.lengthSq() > 0) {
       input.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw)
