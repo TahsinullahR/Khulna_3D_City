@@ -18,16 +18,18 @@ type OSMElement = {
 type OSMResponse = { elements: OSMElement[] }
 
 const CENTER = { lat: 22.8145, lon: 89.5480 }
-// A deliberately bounded first district around central Khulna.
-// Expand only after measuring browser and mobile performance.
-const BBOX = { south: 22.805, west: 89.535, north: 22.824, east: 89.561 }
+// Phase 2 expands the playable mapped area to several kilometres around central Khulna.
+// This is still a district-scale slice, not a complete citywide map.
+const BBOX = { south: 22.795, west: 89.523, north: 22.834, east: 89.573 }
+const MAP_CACHE_KEY = 'khulna-city-osm-v2'
+const MAP_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const METERS_PER_LAT = 111_320
 const METERS_PER_LON = 111_320 * Math.cos(CENTER.lat * Math.PI / 180)
 
 export class KhulnaGame {
   private renderer: THREE.WebGLRenderer | null = null
   private scene = new THREE.Scene()
-  private camera = new THREE.PerspectiveCamera(62, 1, 0.1, 2500)
+  private camera = new THREE.PerspectiveCamera(62, 1, 0.1, 6000)
   private player = new THREE.Group()
   private playerBody: THREE.Mesh | null = null
   private playerHead: THREE.Mesh | null = null
@@ -108,7 +110,7 @@ export class KhulnaGame {
 
   private setupScene() {
     this.scene.background = new THREE.Color('#a9c3d0')
-    this.scene.fog = new THREE.Fog('#a9c3d0', 150, 900)
+    this.scene.fog = new THREE.Fog('#a9c3d0', 250, 2600)
     this.camera.position.set(0, 5, 10)
 
     const hemi = new THREE.HemisphereLight('#e8f4ff', '#77715d', 2.0)
@@ -118,7 +120,7 @@ export class KhulnaGame {
     this.scene.add(sun)
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(1800, 1800),
+      new THREE.PlaneGeometry(6000, 6000),
       new THREE.MeshStandardMaterial({ color: '#777f70', roughness: 1 }),
     )
     ground.rotation.x = -Math.PI / 2
@@ -126,7 +128,7 @@ export class KhulnaGame {
     ground.receiveShadow = true
     this.scene.add(ground)
 
-    const horizon = new THREE.GridHelper(1800, 180, '#8d9689', '#828b80')
+    const horizon = new THREE.GridHelper(6000, 300, '#8d9689', '#828b80')
     horizon.position.y = -0.06
     const gridMaterial = horizon.material as THREE.Material
     gridMaterial.transparent = true
@@ -168,6 +170,29 @@ export class KhulnaGame {
   }
 
   private async loadOSM(): Promise<boolean> {
+    // Cache the validated map data locally so repeat visits do not repeatedly
+    // hit public Overpass servers. Storage can be unavailable or full, so it is optional.
+    try {
+      const raw = window.localStorage.getItem(MAP_CACHE_KEY)
+      if (raw) {
+        const cached = JSON.parse(raw) as { savedAt: number; data: OSMResponse }
+        if (Date.now() - cached.savedAt < MAP_CACHE_TTL_MS &&
+            Array.isArray(cached.data?.elements) && cached.data.elements.length >= 5) {
+          try {
+            this.renderOSM(cached.data.elements)
+            this.callbacks.onMessage('Loaded the locally cached Khulna map data.')
+            return true
+          } catch (error) {
+            console.warn('Cached map data was invalid; fetching a fresh copy.', error)
+            this.clearMapGroup()
+            window.localStorage.removeItem(MAP_CACHE_KEY)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Local map cache is unavailable; continuing without it.', error)
+    }
+
     const query = `[out:json][timeout:22];(way["highway"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["building"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["waterway"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["leisure"="park"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["landuse"~"grass|forest|recreation_ground"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["natural"="water"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}););out body geom;`
     const endpoints = [
       'https://overpass-api.de/api/interpreter',
@@ -193,6 +218,11 @@ export class KhulnaGame {
         if (!Array.isArray(data.elements) || data.elements.length < 5) continue
         try {
           this.renderOSM(data.elements)
+          try {
+            window.localStorage.setItem(MAP_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }))
+          } catch (cacheError) {
+            console.info('Map loaded but could not be cached in this browser.', cacheError)
+          }
           return true
         } catch (error) {
           console.warn('Invalid or incomplete OSM data; trying next endpoint:', error)
@@ -533,7 +563,7 @@ export class KhulnaGame {
   }
 
   private collides(x: number, z: number) {
-    if (Math.abs(x) > 600 || Math.abs(z) > 600) return true
+    if (Math.abs(x) > 2800 || Math.abs(z) > 2300) return true
     const radius = 0.55
     return this.obstacles.some(o =>
       x + radius > o.minX && x - radius < o.maxX &&
