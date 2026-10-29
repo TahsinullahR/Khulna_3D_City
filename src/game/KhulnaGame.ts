@@ -73,6 +73,9 @@ export class KhulnaGame {
         this.callbacks.onMapSource('osm')
         this.callbacks.onMessage('Real OpenStreetMap road and building geometry loaded.')
       } else {
+        // An incomplete OSM response may have created a few meshes before validation failed.
+        // Clear it before constructing the fallback so the scene never mixes partial datasets.
+        this.clearMapGroup()
         this.buildFallbackDistrict()
         this.callbacks.onMapSource('fallback')
         this.callbacks.onMessage('Map service unavailable; using the local playable prototype.')
@@ -181,12 +184,20 @@ export class KhulnaGame {
           body: 'data=' + encodeURIComponent(query),
           signal: controller.signal,
         })
+        if (!response.ok) {
+          window.clearTimeout(timeout)
+          continue
+        }
         window.clearTimeout(timeout)
-        if (!response.ok) continue
         const data = await response.json() as OSMResponse
         if (!Array.isArray(data.elements) || data.elements.length < 5) continue
-        this.renderOSM(data.elements)
-        return true
+        try {
+          this.renderOSM(data.elements)
+          return true
+        } catch (error) {
+          console.warn('Invalid or incomplete OSM data; trying next endpoint:', error)
+          this.clearMapGroup()
+        }
       } catch (error) {
         console.warn('OSM endpoint unavailable:', endpoint, error)
       }
@@ -264,6 +275,18 @@ export class KhulnaGame {
     if (roadCount < 3 || buildingCount < 3) throw new Error('The returned map data was too small.')
   }
 
+  private clearMapGroup() {
+    for (const child of [...this.mapGroup.children]) {
+      this.mapGroup.remove(child)
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose()
+        if (Array.isArray(child.material)) child.material.forEach(material => material.dispose())
+        else child.material.dispose()
+      }
+    }
+    this.obstacles = []
+  }
+
   private buildFallbackDistrict() {
     const asphalt = new THREE.MeshStandardMaterial({ color: '#343b40', roughness: 1 })
     const concrete = new THREE.MeshStandardMaterial({ color: '#b7b2a7', roughness: 1 })
@@ -317,18 +340,23 @@ export class KhulnaGame {
     const onKeyUp = (event: KeyboardEvent) => this.keys.delete(event.code)
     const onBlur = () => { this.keys.clear(); this.touchKeys.clear() }
     const onPointerLock = () => { this.pointerLocked = document.pointerLockElement === this.canvas }
-    const onMouseDown = (event: MouseEvent) => {
+    const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || this.paused) return
       this.pointerDown = true
       this.lastPointer = { x: event.clientX, y: event.clientY }
-      if (window.matchMedia('(pointer:fine)').matches && !this.pointerLocked) {
-        void this.canvas.requestPointerLock().catch(() => undefined)
+      if (event.pointerType === 'mouse' && window.matchMedia('(pointer:fine)').matches && !this.pointerLocked) {
+        try {
+          const lockResult = this.canvas.requestPointerLock()
+          if (lockResult && typeof lockResult.catch === 'function') void lockResult.catch(() => undefined)
+        } catch {
+          // Pointer lock is optional; drag-to-look still works.
+        }
       }
     }
-    const onMouseUp = () => { this.pointerDown = false }
-    const onMouseMove = (event: MouseEvent) => {
+    const onPointerUp = () => { this.pointerDown = false }
+    const onPointerMove = (event: PointerEvent) => {
       if (this.paused) return
-      if (this.pointerLocked) {
+      if (this.pointerLocked && event.pointerType === 'mouse') {
         this.yaw -= event.movementX * 0.0025
         this.pitch = THREE.MathUtils.clamp(this.pitch - event.movementY * 0.0018, -0.65, 0.25)
       } else if (this.pointerDown) {
@@ -343,9 +371,10 @@ export class KhulnaGame {
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', onBlur)
     document.addEventListener('pointerlockchange', onPointerLock)
-    this.canvas.addEventListener('mousedown', onMouseDown)
-    window.addEventListener('mouseup', onMouseUp)
-    window.addEventListener('mousemove', onMouseMove)
+    this.canvas.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
+    window.addEventListener('pointermove', onPointerMove)
     this.canvas.addEventListener('contextmenu', onContext)
 
     this.resizeObserver = new ResizeObserver(() => this.resize())
@@ -355,9 +384,10 @@ export class KhulnaGame {
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
       document.removeEventListener('pointerlockchange', onPointerLock)
-      this.canvas.removeEventListener('mousedown', onMouseDown)
-      window.removeEventListener('mouseup', onMouseUp)
-      window.removeEventListener('mousemove', onMouseMove)
+      this.canvas.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
+      window.removeEventListener('pointermove', onPointerMove)
       this.canvas.removeEventListener('contextmenu', onContext)
     }
   }
