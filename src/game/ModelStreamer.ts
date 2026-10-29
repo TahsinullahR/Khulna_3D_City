@@ -118,11 +118,24 @@ export class ModelStreamer {
 
   dispose() {
     this.disposed = true
-    for (const { root } of this.loaded.values()) this.scene.remove(root)
+    const disposeTree = (root: THREE.Object3D) => {
+      root.traverse(object => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose()
+          if (Array.isArray(object.material)) object.material.forEach(material => material.dispose())
+          else object.material.dispose()
+        }
+      })
+    }
+    for (const { root } of this.loaded.values()) {
+      this.scene.remove(root)
+      disposeTree(root)
+    }
     this.loaded.clear()
     this.loading.clear()
-    // Cached GLTF templates share GPU resources with their clones; scene-wide disposal
-    // in KhulnaGame.destroy() remains responsible for disposing those resources.
+    // Dispose cached source scenes too; geometry/material disposal is safe if shared
+    // resources were already disposed through a cloned instance.
+    for (const template of this.cache.values()) disposeTree(template)
     this.cache.clear()
   }
 }
