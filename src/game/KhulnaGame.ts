@@ -16,7 +16,7 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
-type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
+type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; routeId: number; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -46,6 +46,7 @@ export class KhulnaGame {
   private obstacles: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }> = []
   private roadRoutes: THREE.Vector3[][] = []
   private traffic: TrafficAgent[] = []
+  private trafficRoutes: THREE.Vector3[][] = []
   private clock = new THREE.Clock()
   private raf = 0
   private paused = false
@@ -570,6 +571,7 @@ export class KhulnaGame {
       if (chain.length >= 2) routes.push(chain)
     }
     if (!routes.length) return
+    this.trafficRoutes = routes
     const count = Math.min(10, routes.length)
     const bodyMat = new THREE.MeshStandardMaterial({ color: '#d9e0d8', roughness: 0.48, metalness: 0.12 })
     const windowMat = new THREE.MeshStandardMaterial({ color: '#263b45', roughness: 0.25, metalness: 0.1 })
@@ -587,10 +589,45 @@ export class KhulnaGame {
       const start = route[segment].clone()
       root.position.copy(start)
       this.scene.add(root)
-      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
+      this.traffic.push({ root, route, routeId: i, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
       // Route data can include dense OSM vertices. Each agent advances segment by segment.
       void routeLength
     }
+  }
+
+  private chooseNextTrafficRoute(agent: TrafficAgent): { route: THREE.Vector3[]; routeId: number } | null {
+    const end = agent.route[agent.route.length - 1]
+    const previous = agent.route[agent.route.length - 2]
+    if (!end || !previous) return null
+    const incoming = end.clone().sub(previous).normalize()
+    let best: { route: THREE.Vector3[]; routeId: number; score: number } | null = null
+
+    // Phase 13: look for a nearby route endpoint and prefer the continuation
+    // that changes heading least. This is endpoint-based routing, not a full
+    // intersection graph; crossings in the middle of OSM ways are not nodes.
+    for (let i = 0; i < this.trafficRoutes.length; i++) {
+      if (i === agent.routeId) continue
+      const candidate = this.trafficRoutes[i]
+      if (candidate.length < 2) continue
+      const first = candidate[0]
+      const last = candidate[candidate.length - 1]
+      const firstGap = end.distanceTo(first)
+      const lastGap = end.distanceTo(last)
+      const gap = Math.min(firstGap, lastGap)
+      if (gap > 12) continue
+
+      const reverse = lastGap < firstGap
+      const oriented = reverse ? [...candidate].reverse() : candidate
+      const outgoing = oriented[1].clone().sub(oriented[0]).normalize()
+      const alignment = THREE.MathUtils.clamp(incoming.dot(outgoing), -1, 1)
+      // Strongly prefer continuity, but allow a turn when no straight option exists.
+      const score = gap + (1 - alignment) * 3
+      if (!best || score < best.score) best = { route: oriented.map(point => point.clone()), routeId: i, score }
+    }
+    if (!best) return null
+    // Snap only the joining endpoint so the vehicle does not jump across a small gap.
+    best.route[0].copy(end)
+    return { route: best.route, routeId: best.routeId }
   }
 
   private updateTraffic(dt: number) {
@@ -660,7 +697,16 @@ export class KhulnaGame {
         if (distance < 0.1) {
           agent.segment++
           agent.progress = 0
-          if (agent.segment >= agent.route.length - 1) agent.stopped = true
+          if (agent.segment >= agent.route.length - 1) {
+            const nextRoute = this.chooseNextTrafficRoute(agent)
+            if (nextRoute) {
+              agent.route = nextRoute.route
+              agent.routeId = nextRoute.routeId
+              agent.segment = 0
+              agent.progress = 0
+              agent.root.position.copy(agent.route[0])
+            } else agent.stopped = true
+          }
           continue
         }
         const available = distance - agent.progress
@@ -674,7 +720,16 @@ export class KhulnaGame {
         if (agent.progress >= distance - 0.001) {
           agent.segment++
           agent.progress = 0
-          if (agent.segment >= agent.route.length - 1) agent.stopped = true
+          if (agent.segment >= agent.route.length - 1) {
+            const nextRoute = this.chooseNextTrafficRoute(agent)
+            if (nextRoute) {
+              agent.route = nextRoute.route
+              agent.routeId = nextRoute.routeId
+              agent.segment = 0
+              agent.progress = 0
+              agent.root.position.copy(agent.route[0])
+            } else agent.stopped = true
+          }
         }
       }
       // Keep agents visible when nearby so braking feels connected to the world.
