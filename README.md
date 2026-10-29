@@ -2,9 +2,9 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 2
+## Current milestone — Phase 3
 
-The playable prototype now requests a larger district-scale area around central Khulna (approximately 5 km east–west by 4.3 km north–south, depending on the geographic projection). Map data is cached in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction.
+The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction.
 
 Current features:
 - Responsive website shell and embedded WebGL canvas.
@@ -15,6 +15,7 @@ Current features:
 - Simple polygon surfaces for mapped parks/green areas and water bodies where OSM geometry exists.
 - A procedural fallback district if public map services are unavailable.
 - Best-effort 24-hour browser cache for validated OpenStreetMap response data.
+- Labels for named mapped landmarks when the OSM way has a name and a recognized place/amenity tag.
 - Basic building collision and renderer cleanup.
 
 **Important:** This is an early prototype, not a complete photorealistic reconstruction of Khulna. Building heights without source data are approximated, the character is a placeholder, and vehicles, missions, traffic, and NPC systems have not been implemented yet.
@@ -53,7 +54,7 @@ The first district is requested from OpenStreetMap's Overpass API within a small
 
 Public Overpass endpoints can be busy, rate-limited, unavailable, or blocked by a browser/network. The game therefore falls back to a local procedural prototype. For a stable public release, prepare and host a checked, appropriately licensed regional extract rather than relying on a live public Overpass query at every launch.
 
-The center and bounding box are configuration values in `src/game/KhulnaGame.ts`. The current bounding box is still a limited district-scale slice and should be validated against geographic references before expanding it. Public Overpass services may time out or return large responses; local cache is best-effort and can be cleared by the browser.
+The center and bounding box are configuration values in `src/game/KhulnaGame.ts`. The current bounding box is still a limited district-scale slice and should be validated against geographic references before expanding it. Landmark labels depend on the names and tags actually present in OpenStreetMap; they are not guaranteed to include every place visible in Google Maps. Public Overpass services may time out or return large responses; local cache is best-effort and can be cleared by the browser.
 
 ## Data attribution and licensing
 
