@@ -2,14 +2,14 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 4
+## Current milestone — Phase 5
 
-The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. A first arcade-style drivable car has been added for movement testing; it is not realistic vehicle physics or traffic simulation.
+The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The arcade car now uses oriented corner/side collision samples to better respect building obstacles, smoother acceleration response, and Space braking. This remains simplified movement, not realistic vehicle physics or traffic simulation.
 
 Current features:
 - Responsive website shell and embedded WebGL canvas.
 - Third-person placeholder character with movement, sprint, jump, and follow camera.
-- A simple arcade car prototype with enter/exit interaction, forward/reverse throttle, steering, speed HUD feedback, and collision checks.
+- A simple arcade car prototype with enter/exit interaction, forward/reverse throttle, steering, speed HUD feedback, footprint collision samples, and braking.
 - Keyboard/mouse controls and touch buttons for mobile browsers, including a DRIVE button.
 - A bounded OpenStreetMap request for road geometry, building footprints, mapped waterways, and tagged green areas around central Khulna.
 - Improved mapped road hierarchy, shoulder/edge treatment, and restrained center markings on wider roads.
@@ -77,7 +77,7 @@ Useful references:
 2. Validate road widths and intersections against local references; add sidewalks and named landmark labels.
 3. Add a proper rigged character and animation assets.
 4. Add drivable vehicles and vehicle physics.
-5. Improve vehicle collision/physics, add more vehicle types, NPCs, traffic, missions, save/load, and game settings.
+5. Replace approximate footprint samples with robust collision geometry, improve driving feel, then add traffic/NPCs, missions, save/load, and game settings.
 6. Test on desktop and physical Android devices, then optimize and deploy.
 
 ## Current limitations
@@ -94,5 +94,5 @@ Useful references:
 
 - Walk close to the green prototype car near the starting point.
 - Press `V` on desktop or tap `DRIVE` on mobile to enter or exit.
-- In driving mode, `W` / `S` accelerate and reverse; `A` / `D` steer.
+- In driving mode, `W` / `S` accelerate and reverse; `A` / `D` steer; hold `Space` to brake.
 - The current vehicle is a low-poly placeholder using simplified arcade motion. It does not yet model traffic rules, suspension, damage, or full vehicle dynamics.
