@@ -68,7 +68,7 @@ export class KhulnaGame {
       this.setupPlayer()
       this.scene.add(this.mapGroup)
       this.installEvents()
-      this.callbacks.onMessage('Loading mapped roads and buildings around central Khulna…')
+      this.callbacks.onMessage('Loading central Khulna roads, buildings, green areas and waterways…')
       const loaded = await this.loadOSM()
       if (this.destroyed) return
       if (loaded) {
