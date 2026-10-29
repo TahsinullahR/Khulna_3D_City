@@ -594,16 +594,34 @@ export class KhulnaGame {
   }
 
   private updateTraffic(dt: number) {
-    // Fixed small cap keeps the per-frame agent checks predictable on mobile.
+    // Small fixed agent cap keeps collision checks predictable on mobile.
+    const playerPosition = this.vehicleMode ? this.vehicle.position : this.player.position
     for (const agent of this.traffic) {
       if (agent.stopped) continue
+
+      // Phase 10: soft braking for the player vehicle/character and nearby traffic.
+      // This is proximity-based, not a physical rigid-body collision system.
+      let targetSpeed = agent.cruiseSpeed
+      const playerGap = agent.root.position.distanceTo(playerPosition)
+      if (playerGap < 6.5) {
+        targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((playerGap - 2.2) * 1.25, 0, agent.cruiseSpeed))
+      }
+      for (const other of this.traffic) {
+        if (other === agent || other.stopped) continue
+        const gap = agent.root.position.distanceTo(other.root.position)
+        if (gap < 5.2) {
+          targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((gap - 2.1) * 1.15, 0.25, agent.cruiseSpeed))
+        }
+      }
+      const response = targetSpeed < agent.speed ? 3.8 : 0.85
+      agent.speed = THREE.MathUtils.damp(agent.speed, targetSpeed, response, dt)
+
       let remaining = agent.speed * dt
       let safety = 0
       while (remaining > 0 && safety++ < 20) {
         const from = agent.route[agent.segment]
         const to = agent.route[agent.segment + 1]
-        // OSM ways are often open paths. Stop at the end instead of teleporting
-        // back to the first vertex, which caused visible route discontinuities.
+        // Open route ends remain terminal; vehicles never teleport to route start.
         if (!from || !to) {
           agent.stopped = true
           break
@@ -629,21 +647,8 @@ export class KhulnaGame {
           if (agent.segment >= agent.route.length - 1) agent.stopped = true
         }
       }
-      // Basic following gap: slow down when another agent is very close.
-      // Not a full lane-aware or intersection-aware traffic simulation.
-      let closeAgent = false
-      for (const other of this.traffic) {
-        if (other === agent || other.stopped) continue
-        const gap = agent.root.position.distanceTo(other.root.position)
-        if (gap < 4.5) {
-          closeAgent = true
-          agent.speed = Math.max(1.2, agent.speed - (4.5 - gap) * dt * 1.8)
-          break
-        }
-      }
-      if (!closeAgent) agent.speed = Math.min(agent.cruiseSpeed, agent.speed + dt * 0.9)
-      const d = agent.root.position.distanceTo(this.vehicleMode ? this.vehicle.position : this.player.position)
-      agent.root.visible = !agent.stopped && d > 3.8
+      // Keep agents visible when nearby so braking feels connected to the world.
+      agent.root.visible = !agent.stopped
     }
   }
 
