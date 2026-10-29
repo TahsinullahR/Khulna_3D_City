@@ -74,7 +74,7 @@ export default function App() {
         <div className="intro-copy">
           <div className="eyebrow"><MapPin size={14} /> KHULNA, BANGLADESH</div>
           <h1>Your city.<br /><span>Your open world.</span></h1>
-          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints, named landmarks, a drivable car prototype with longer chained road routes, smoother traffic braking, Bangladeshi traffic mix: auto-rickshaw, CNG, easybike, motorcycle, bus and truck, with distinct low-poly models and vehicle-specific cruising speeds.</p>
+          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints, named landmarks, a drivable car prototype with longer chained road routes, smoother traffic braking, Bangladeshi traffic mix: auto-rickshaw, CNG, easybike, motorcycle, bus and truck, with distinct low-poly models and vehicle-specific cruising speeds. Phase 16 adds optional distance-based GLB/GLTF streaming with a model manifest and graceful fallback when assets are missing.</p>
           <div className="intro-actions">
             <button className="primary-button" onClick={startGame}><Play size={16} fill="currentColor" /> {paused ? 'RESUME GAME' : 'ENTER THE CITY'} <ArrowUpRight size={16} /></button>
             <button className="secondary-button" onClick={toggleFullscreen}><Expand size={16} /> FULLSCREEN</button>
@@ -83,7 +83,7 @@ export default function App() {
         </div>
         <div className="intro-stat">
           <span className="stat-label">CURRENT BUILD</span>
-          <strong>1.5 <span>ALPHA</span></strong>
+          <strong>1.6 <span>ALPHA</span></strong>
           <div className="stat-divider" />
           <span className="stat-label">MAP DATA</span>
           <strong className="map-stat">{mapSource === 'osm' ? 'OPENSTREETMAP' : mapSource === 'fallback' ? 'LOCAL PROTOTYPE' : 'LOADING…'}</strong>
@@ -107,7 +107,7 @@ export default function App() {
           <div className="game-vignette" />
           <div className="game-top-hud">
             <div className="location-pill"><MapPin size={13} /><span>KHULNA DISTRICT</span><i /></div>
-            <div className="build-pill">ALPHA 1.5</div>
+            <div className="build-pill">ALPHA 1.6</div>
           </div>
           <div className="crosshair" />
           <div className="game-bottom-hud">
