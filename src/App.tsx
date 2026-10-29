@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, CarFront, CircleHelp, Expand, MapPin, Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import { CarFront, CircleHelp, Expand, MapPin, Pause, Play, RotateCcw } from 'lucide-react'
 import { KhulnaGame, type GameStatus } from './game/KhulnaGame'
 
 export default function App() {
@@ -8,8 +8,7 @@ export default function App() {
   const [status, setStatus] = useState<GameStatus>('loading')
   const [message, setMessage] = useState('Preparing the city...')
   const [paused, setPaused] = useState(false)
-  const [muted, setMuted] = useState(false)
-  const [speed, setSpeed] = useState(0)
+    const [speed, setSpeed] = useState(0)
   const [showHelp, setShowHelp] = useState(false)
   const [mapSource, setMapSource] = useState<'loading' | 'osm' | 'fallback'>('loading')
 
@@ -60,43 +59,21 @@ export default function App() {
   return (
     <main className="site-shell">
       <header className="topbar">
-        <a className="brand" href="#home" aria-label="Khulna City home">
+        <a className="brand" href="#home" aria-label="Khulna City game">
           <span className="brand-mark">KC</span>
           <span className="brand-copy"><strong>KHULNA CITY</strong><small>OPEN WORLD PROJECT</small></span>
         </a>
         <div className="topbar-right">
-          <span className="live-dot" /> <span className="topbar-label">BROWSER GAME PROTOTYPE</span>
+          <span className="live-dot" /> <span className="topbar-label">LIVE CITY WORLD</span>
           <button className="icon-button" onClick={() => setShowHelp(v => !v)} aria-label="Show controls"><CircleHelp size={18} /></button>
         </div>
       </header>
 
-      <section className="intro" id="home">
-        <div className="intro-copy">
-          <div className="eyebrow"><MapPin size={14} /> KHULNA, BANGLADESH</div>
-          <h1>Your city.<br /><span>Your open world.</span></h1>
-          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints, named landmarks, a drivable car prototype with longer chained road routes, smoother traffic braking, Bangladeshi traffic mix: auto-rickshaw, CNG, easybike, motorcycle, bus and truck, with distinct low-poly models and vehicle-specific cruising speeds. Phase 16 adds optional distance-based GLB/GLTF streaming with a model manifest and graceful fallback when assets are missing.</p>
-          <div className="intro-actions">
-            <button className="primary-button" onClick={startGame}><Play size={16} fill="currentColor" /> {paused ? 'RESUME GAME' : 'ENTER THE CITY'} <ArrowUpRight size={16} /></button>
-            <button className="secondary-button" onClick={toggleFullscreen}><Expand size={16} /> FULLSCREEN</button>
-          </div>
-          <div className="status-line"><span className={status === 'ready' ? 'status-dot ready' : 'status-dot'} /> {status === 'ready' ? 'GAME WORLD READY' : status === 'loading' ? 'LOADING CITY WORLD' : status === 'error' ? 'RENDERER ERROR' : 'GAME PAUSED'}</div>
-        </div>
-        <div className="intro-stat">
-          <span className="stat-label">CURRENT BUILD</span>
-          <strong>1.6 <span>ALPHA</span></strong>
-          <div className="stat-divider" />
-          <span className="stat-label">MAP DATA</span>
-          <strong className="map-stat">{mapSource === 'osm' ? 'OPENSTREETMAP' : mapSource === 'fallback' ? 'LOCAL PROTOTYPE' : 'LOADING…'}</strong>
-          <small>{mapSource === 'osm' ? 'Expanded map with available landmark labels loaded' : mapSource === 'fallback' ? 'OSM unavailable; using prototype map' : 'Requesting geographic data'}</small>
-        </div>
-      </section>
-
       <section className="game-section" aria-label="Playable 3D game">
         <div className="game-heading">
-          <div><span className="section-kicker">LIVE WORLD</span><h2>Explore Khulna</h2></div>
+          <div><span className="section-kicker">OPEN WORLD · BANGLADESH</span><h2>Khulna City</h2></div>
           <div className="game-tools">
             <span className="chip"><span className="tiny-dot" /> 3D RENDER</span>
-            <button className="icon-button" onClick={() => setMuted(v => !v)} aria-label={muted ? 'Enable sound' : 'Mute sound'}>{muted ? <VolumeX size={17} /> : <Volume2 size={17} />}</button>
             <button className="icon-button" onClick={toggleFullscreen} aria-label="Toggle fullscreen"><Expand size={17} /></button>
             <button className="icon-button" onClick={togglePause} aria-label={paused ? 'Resume game' : 'Pause game'}>{paused ? <Play size={17} /> : <Pause size={17} />}</button>
           </div>
@@ -107,7 +84,7 @@ export default function App() {
           <div className="game-vignette" />
           <div className="game-top-hud">
             <div className="location-pill"><MapPin size={13} /><span>KHULNA DISTRICT</span><i /></div>
-            <div className="build-pill">ALPHA 1.6</div>
+            <div className="build-pill">ALPHA 1.7</div>
           </div>
           <div className="crosshair" />
           <div className="game-bottom-hud">
@@ -130,14 +107,7 @@ export default function App() {
         <div className="game-caption"><span><i /> {mapSource === 'osm' ? 'REAL GEOGRAPHIC DATA LOADED' : 'EARLY PLAYABLE BUILD'}</span><span>MAP CACHE SAVED LOCALLY WHEN AVAILABLE</span></div>
       </section>
 
-      <section className="feature-row">
-        <article><span className="feature-number">01 / WORLD</span><h3>Built around the real city</h3><p>Start with mapped roads and building footprints around central Khulna, then expand district by district.</p></article>
-        <article><span className="feature-number">02 / GAMEPLAY</span><h3>A world you can move through</h3><p>Third-person movement, camera control, collision and mobile-friendly inputs form the first playable foundation.</p></article>
-        <article><span className="feature-number">03 / NEXT</span><h3>More city, more systems</h3><p>Vehicles, pedestrians, missions, detailed assets and additional neighborhoods will be added in later phases.</p></article>
-      </section>
 
-      <footer className="footer"><a className="brand footer-brand" href="#home"><span className="brand-mark">KC</span><span className="brand-copy"><strong>KHULNA CITY</strong><small>OPEN WORLD PROJECT</small></span></a><p>Independent browser-game prototype. Not affiliated with any city authority. Map data, when loaded: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>.</p><span>BUILT FOR THE WEB · 2026</span></footer>
-      <div className="sound-state" aria-live="polite">{muted ? 'Sound muted' : ''}</div>
     </main>
   )
 }
