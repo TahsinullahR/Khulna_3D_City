@@ -16,7 +16,7 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
-type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number }
+type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number; stopped: boolean }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -548,29 +548,32 @@ export class KhulnaGame {
       const start = route[segment].clone()
       root.position.copy(start)
       this.scene.add(root)
-      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75 })
+      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, stopped: false })
       // Route data can include dense OSM vertices. Each agent advances segment by segment.
       void routeLength
     }
   }
 
   private updateTraffic(dt: number) {
+    // Fixed small cap keeps the per-frame agent checks predictable on mobile.
     for (const agent of this.traffic) {
+      if (agent.stopped) continue
       let remaining = agent.speed * dt
       let safety = 0
       while (remaining > 0 && safety++ < 20) {
         const from = agent.route[agent.segment]
         const to = agent.route[agent.segment + 1]
+        // OSM ways are often open paths. Stop at the end instead of teleporting
+        // back to the first vertex, which caused visible route discontinuities.
         if (!from || !to) {
-          agent.segment = 0
-          agent.progress = 0
-          continue
+          agent.stopped = true
+          break
         }
         const distance = from.distanceTo(to)
         if (distance < 0.1) {
           agent.segment++
           agent.progress = 0
-          if (agent.segment >= agent.route.length - 1) agent.segment = 0
+          if (agent.segment >= agent.route.length - 1) agent.stopped = true
           continue
         }
         const available = distance - agent.progress
@@ -584,12 +587,21 @@ export class KhulnaGame {
         if (agent.progress >= distance - 0.001) {
           agent.segment++
           agent.progress = 0
-          if (agent.segment >= agent.route.length - 1) agent.segment = 0
+          if (agent.segment >= agent.route.length - 1) agent.stopped = true
         }
       }
-      // Hide ambient traffic near the player's immediate footprint to reduce direct clipping.
+      // Basic following gap: slow down when another agent is very close.
+      // Not a full lane-aware or intersection-aware traffic simulation.
+      for (const other of this.traffic) {
+        if (other === agent || other.stopped) continue
+        const gap = agent.root.position.distanceTo(other.root.position)
+        if (gap < 4.5) {
+          agent.speed = Math.max(1.2, agent.speed - (4.5 - gap) * dt * 1.8)
+          break
+        }
+      }
       const d = agent.root.position.distanceTo(this.vehicleMode ? this.vehicle.position : this.player.position)
-      agent.root.visible = d > 3.8
+      agent.root.visible = !agent.stopped && d > 3.8
     }
   }
 
