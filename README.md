@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 10
+## Current milestone — Phase 11
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -11,7 +11,7 @@ Current features:
 - Third-person placeholder character with movement, sprint, jump, and follow camera.
 - A simple arcade car prototype with enter/exit interaction, forward/reverse throttle, steering, speed HUD feedback, footprint collision samples, braking, wheel spin, front wheel steering pivots, and adaptive chase camera.
 - Limited low-poly ambient traffic, capped at 10 agents for a lightweight prototype, following available long road geometries.
-- Phase 10 soft braking: traffic slows smoothly near the player/car and nearby traffic, with a minimum crawl speed to reduce close-following overlap.
+- Phase 10 added smooth proximity braking. Phase 11 adds cautious speed reduction before sharp bends in each traffic agent's current route, plus a stronger response when traffic needs to slow. This is not full intersection topology, right-of-way, or collision physics.
 - Keyboard/mouse controls and touch buttons for mobile browsers, including a DRIVE button.
 - A bounded OpenStreetMap request for road geometry, building footprints, mapped waterways, and tagged green areas around central Khulna.
 - Improved mapped road hierarchy, shoulder/edge treatment, and restrained center markings on wider roads.
@@ -135,3 +135,10 @@ Useful references:
 - Ambient cars use smooth speed changes to slow down near the player on foot or in the drivable car, and near other ambient traffic.
 - Nearby traffic remains visible instead of disappearing around the player, making the response easier to observe.
 - This is a lightweight distance-based behavior, not physical collision response, lane-aware following, intersection negotiation, or a stuck-vehicle recovery system. Vehicles can still overlap or stop at route ends.
+
+
+## Phase 11 cautious cornering
+
+- Traffic agents inspect the next route segment and reduce speed before sharp bends when the bend is close.
+- Braking response is stronger than acceleration recovery, so cars slow more decisively when a nearby hazard or corner is detected.
+- This is a local route-geometry heuristic. It does not identify real road junctions, select legal turns, understand one-way streets or right-of-way, or provide physical collision resolution. Route chains may still connect the wrong road fragments and cars can overlap.
