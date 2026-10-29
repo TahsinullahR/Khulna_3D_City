@@ -510,7 +510,7 @@ export class KhulnaGame {
         if (this.pointerLocked) void document.exitPointerLock()
         this.pause()
       }
-      if (event.code === 'Space' && this.grounded && !this.paused) {
+      if (event.code === 'Space' && this.grounded && !this.paused && !this.vehicleMode) {
         this.verticalVelocity = 7.2
         this.grounded = false
       }
@@ -576,7 +576,7 @@ export class KhulnaGame {
     if (key === 'KeyV' && down && !this.paused) { this.setVehicleMode(!this.vehicleMode); return }
     if (down) this.touchKeys.add(key)
     else this.touchKeys.delete(key)
-    if (key === 'Space' && down && this.grounded && !this.paused) {
+    if (key === 'Space' && down && this.grounded && !this.paused && !this.vehicleMode) {
       this.verticalVelocity = 7.2
       this.grounded = false
     }
