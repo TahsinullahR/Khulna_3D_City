@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 12
+## Current milestone — Phase 13
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -11,7 +11,7 @@ Current features:
 - Third-person placeholder character with movement, sprint, jump, and follow camera.
 - A simple arcade car prototype with enter/exit interaction, forward/reverse throttle, steering, speed HUD feedback, footprint collision samples, braking, wheel spin, front wheel steering pivots, and adaptive chase camera.
 - Limited low-poly ambient traffic, capped at 10 agents for a lightweight prototype, following available long road geometries.
-- Phase 10 added smooth proximity braking. Phase 11 adds cautious speed reduction before sharp bends in each traffic agent's current route. Phase 12 makes traffic-to-traffic following direction-aware: agents brake for cars ahead in a nearby corridor, including stopped cars, instead of treating every car at the same distance as an equal obstacle. This remains a lightweight geometric heuristic, not a full road graph, lane model, right-of-way system, or collision physics.
+- Phase 10 added smooth proximity braking. Phase 11 adds cautious speed reduction before sharp bends in each traffic agent's current route. Phase 12 makes traffic-to-traffic following direction-aware. Phase 13 adds endpoint-based route continuation: when a vehicle reaches the end of its current route, it looks for another nearby route endpoint and prefers the option whose heading best continues the current direction. This is still a prototype heuristic, not a full road graph or turn-legal navigation system.
 - Keyboard/mouse controls and touch buttons for mobile browsers, including a DRIVE button.
 - A bounded OpenStreetMap request for road geometry, building footprints, mapped waterways, and tagged green areas around central Khulna.
 - Improved mapped road hierarchy, shoulder/edge treatment, and restrained center markings on wider roads.
@@ -150,3 +150,11 @@ Useful references:
 - Cars reduce speed for a vehicle ahead within 8.5 world units when the lateral separation is within the configured corridor; stopped cars also count as obstacles.
 - Cars beside or behind an agent no longer trigger the same following-distance brake merely because they are close in Euclidean distance.
 - This is a local approximation. It does not model multiple lanes, vehicle dimensions, junction priorities, lane changes, or rigid-body collisions; unusual road chains can still cause poor behavior.
+
+
+## Phase 13 endpoint-based route continuation
+
+- When a traffic agent reaches the end of its current route, it searches other assembled route chains for an endpoint within 12 world units.
+- It evaluates candidate direction alignment and prefers a route that continues the current heading with less abrupt turning; if no nearby candidate exists, the car stops instead of teleporting to a distant road.
+- The selected route endpoint is snapped to the current endpoint to bridge small map-data gaps. The vehicle then continues along that route.
+- Limitations: this is endpoint matching, not a full intersection graph. Roads crossing in the middle of an OSM way are not split into junction nodes; one-way rules, legal turn restrictions, lane selection, and collision physics are not modeled. The route heuristic can still choose a wrong connection.
