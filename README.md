@@ -69,7 +69,7 @@ Useful references:
 ## Roadmap
 
 1. Verify and cache a real central-Khulna geographic extract.
-2. Improve road widths, sidewalks, intersections, terrain, and landmark labeling.
+2. Validate road widths and intersections against local references; add sidewalks and named landmark labels.
 3. Add a proper rigged character and animation assets.
 4. Add drivable vehicles and vehicle physics.
 5. Add NPCs, traffic, missions, save/load, and game settings.
