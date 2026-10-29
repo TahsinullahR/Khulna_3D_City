@@ -168,7 +168,7 @@ export class KhulnaGame {
   }
 
   private async loadOSM(): Promise<boolean> {
-    const query = `[out:json][timeout:18];(way["highway"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["building"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}););out body geom;`
+    const query = `[out:json][timeout:22];(way["highway"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["building"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["waterway"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["leisure"="park"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["landuse"~"grass|forest|recreation_ground"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});way["natural"="water"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}););out body geom;`
     const endpoints = [
       'https://overpass-api.de/api/interpreter',
       'https://overpass.kumi.systems/api/interpreter',
@@ -207,6 +207,10 @@ export class KhulnaGame {
 
   private renderOSM(elements: OSMElement[]) {
     const roadMaterial = new THREE.MeshStandardMaterial({ color: '#303940', roughness: 0.96 })
+    const roadEdgeMaterial = new THREE.MeshStandardMaterial({ color: '#737873', roughness: 1 })
+    const laneMaterial = new THREE.MeshStandardMaterial({ color: '#d8d1b6', roughness: 0.9 })
+    const waterMaterial = new THREE.MeshStandardMaterial({ color: '#5e9fa8', roughness: 0.55, metalness: 0.05 })
+    const greenMaterial = new THREE.MeshStandardMaterial({ color: '#687f5b', roughness: 1, side: THREE.DoubleSide })
     const buildingPalette = ['#b9b5aa', '#c9c2b5', '#aeb9b5', '#d2c8b8', '#a8ada8', '#c5b7a8']
     let buildingIndex = 0
     let roadCount = 0
@@ -218,22 +222,57 @@ export class KhulnaGame {
       const coords = points.map(p => this.localPosition(p.lat, p.lon))
       const tags = element.tags ?? {}
 
-      if (tags.highway) {
-        const highway = tags.highway
-        const width = highway === 'motorway' || highway === 'trunk' || highway === 'primary' ? 7.5
-          : highway === 'secondary' ? 6 : highway === 'tertiary' ? 4.8 : 3.2
+      if (tags.highway || tags.waterway) {
+        const highway = tags.highway || ''
+        const width = tags.waterway ? (tags.waterway === 'river' ? 9 : 3.5)
+          : highway === 'motorway' || highway === 'trunk' || highway === 'primary' ? 7.5
+          : highway === 'secondary' ? 6 : highway === 'tertiary' ? 4.8
+          : highway === 'residential' || highway === 'unclassified' ? 4 : 2.8
+        const surfaceMaterial = tags.waterway ? waterMaterial : roadMaterial
         for (let i = 0; i < coords.length - 1; i++) {
           const a = coords[i], b = coords[i + 1]
           const dx = b.x - a.x, dz = b.z - a.z
           const length = Math.hypot(dx, dz)
           if (length < 0.5 || length > 500) continue
-          const road = new THREE.Mesh(new THREE.PlaneGeometry(width, length), roadMaterial)
+          const angle = -Math.atan2(dx, dz)
+          if (tags.highway && width >= 4.8) {
+            const edge = new THREE.Mesh(new THREE.PlaneGeometry(width + 1.1, length), roadEdgeMaterial)
+            edge.rotation.x = -Math.PI / 2
+            edge.rotation.z = angle
+            edge.position.set((a.x + b.x) / 2, 0.008, (a.z + b.z) / 2)
+            this.mapGroup.add(edge)
+          }
+          const road = new THREE.Mesh(new THREE.PlaneGeometry(width, length), surfaceMaterial)
           road.rotation.x = -Math.PI / 2
-          road.rotation.z = -Math.atan2(dx, dz)
-          road.position.set((a.x + b.x) / 2, 0.015, (a.z + b.z) / 2)
+          road.rotation.z = angle
+          road.position.set((a.x + b.x) / 2, tags.waterway ? 0.018 : 0.015, (a.z + b.z) / 2)
           this.mapGroup.add(road)
+          if (tags.highway && width >= 6 && length > 16) {
+            const dashCount = Math.min(18, Math.floor(length / 10))
+            for (let dash = 0; dash < dashCount; dash++) {
+              const t = (dash + 0.5) / dashCount
+              const mark = new THREE.Mesh(new THREE.PlaneGeometry(0.09, Math.min(2.5, length / dashCount * 0.45)), laneMaterial)
+              mark.rotation.x = -Math.PI / 2
+              mark.rotation.z = angle
+              mark.position.set(a.x + dx * t, 0.026, a.z + dz * t)
+              this.mapGroup.add(mark)
+            }
+          }
           roadCount++
         }
+      } else if ((tags.leisure === 'park' || ['grass', 'forest', 'recreation_ground'].includes(tags.landuse || '') || tags.natural === 'water') && coords.length >= 4) {
+        const first = coords[0], last = coords[coords.length - 1]
+        if (Math.hypot(first.x - last.x, first.z - last.z) > 1) continue
+        const shape = new THREE.Shape()
+        shape.moveTo(coords[0].x, -coords[0].z)
+        for (let i = 1; i < coords.length - 1; i++) shape.lineTo(coords[i].x, -coords[i].z)
+        shape.closePath()
+        const isWater = tags.natural === 'water'
+        const geometry = new THREE.ShapeGeometry(shape)
+        geometry.rotateX(-Math.PI / 2)
+        const area = new THREE.Mesh(geometry, isWater ? waterMaterial : greenMaterial)
+        area.position.y = isWater ? 0.012 : 0.004
+        this.mapGroup.add(area)
       } else if (tags.building) {
         const distinct = coords.filter((p, i) => i === 0 || Math.hypot(p.x - coords[i - 1].x, p.z - coords[i - 1].z) > 0.15)
         if (distinct.length < 3) continue
