@@ -136,7 +136,7 @@ export default function App() {
         <article><span className="feature-number">03 / NEXT</span><h3>More city, more systems</h3><p>Vehicles, pedestrians, missions, detailed assets and additional neighborhoods will be added in later phases.</p></article>
       </section>
 
-      <footer className="footer"><a className="brand footer-brand" href="#home"><span className="brand-mark">KC</span><span className="brand-copy"><strong>KHULNA CITY</strong><small>OPEN WORLD PROJECT</small></span></a><p>Independent browser-game prototype. Not affiliated with any city authority.</p><span>BUILT FOR THE WEB · 2026</span></footer>
+      <footer className="footer"><a className="brand footer-brand" href="#home"><span className="brand-mark">KC</span><span className="brand-copy"><strong>KHULNA CITY</strong><small>OPEN WORLD PROJECT</small></span></a><p>Independent browser-game prototype. Not affiliated with any city authority. Map data, when loaded: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>.</p><span>BUILT FOR THE WEB · 2026</span></footer>
       <div className="sound-state" aria-live="polite">{muted ? 'Sound muted' : ''}</div>
     </main>
   )
