@@ -16,7 +16,7 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
-type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; routeId: number; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
+type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; routeId: number; previousRouteId: number | null; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -589,7 +589,7 @@ export class KhulnaGame {
       const start = route[segment].clone()
       root.position.copy(start)
       this.scene.add(root)
-      this.traffic.push({ root, route, routeId: i, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
+      this.traffic.push({ root, route, routeId: i, previousRouteId: null, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
       // Route data can include dense OSM vertices. Each agent advances segment by segment.
       void routeLength
     }
@@ -621,7 +621,8 @@ export class KhulnaGame {
       const outgoing = oriented[1].clone().sub(oriented[0]).normalize()
       const alignment = THREE.MathUtils.clamp(incoming.dot(outgoing), -1, 1)
       // Strongly prefer continuity, but allow a turn when no straight option exists.
-      const score = gap + (1 - alignment) * 3
+      const backtrackPenalty = i === agent.previousRouteId ? 8 : 0
+      const score = gap + (1 - alignment) * 3 + backtrackPenalty
       if (!best || score < best.score) best = { route: oriented.map(point => point.clone()), routeId: i, score }
     }
     if (!best) return null
@@ -700,6 +701,7 @@ export class KhulnaGame {
           if (agent.segment >= agent.route.length - 1) {
             const nextRoute = this.chooseNextTrafficRoute(agent)
             if (nextRoute) {
+              agent.previousRouteId = agent.routeId
               agent.route = nextRoute.route
               agent.routeId = nextRoute.routeId
               agent.segment = 0
