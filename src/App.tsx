@@ -74,7 +74,7 @@ export default function App() {
         <div className="intro-copy">
           <div className="eyebrow"><MapPin size={14} /> KHULNA, BANGLADESH</div>
           <h1>Your city.<br /><span>Your open world.</span></h1>
-          <p>Explore a browser-based 3D city prototype inspired by Khulna. Roam a wider central district built from mapped roads and building footprints.</p>
+          <p>Explore a browser-based 3D city prototype inspired by Khulna. Explore the Sonadanga-side district around Khulna City Medical College and Banorgati, with mapped roads, building footprints and available named landmarks.</p>
           <div className="intro-actions">
             <button className="primary-button" onClick={startGame}><Play size={16} fill="currentColor" /> {paused ? 'RESUME GAME' : 'ENTER THE CITY'} <ArrowUpRight size={16} /></button>
             <button className="secondary-button" onClick={toggleFullscreen}><Expand size={16} /> FULLSCREEN</button>
@@ -83,11 +83,11 @@ export default function App() {
         </div>
         <div className="intro-stat">
           <span className="stat-label">CURRENT BUILD</span>
-          <strong>0.2 <span>ALPHA</span></strong>
+          <strong>0.3 <span>ALPHA</span></strong>
           <div className="stat-divider" />
           <span className="stat-label">MAP DATA</span>
           <strong className="map-stat">{mapSource === 'osm' ? 'OPENSTREETMAP' : mapSource === 'fallback' ? 'LOCAL PROTOTYPE' : 'LOADING…'}</strong>
-          <small>{mapSource === 'osm' ? 'Expanded mapped road/building geometry loaded' : mapSource === 'fallback' ? 'OSM unavailable; using prototype map' : 'Requesting geographic data'}</small>
+          <small>{mapSource === 'osm' ? 'Expanded map with available landmark labels loaded' : mapSource === 'fallback' ? 'OSM unavailable; using prototype map' : 'Requesting geographic data'}</small>
         </div>
       </section>
 
@@ -107,7 +107,7 @@ export default function App() {
           <div className="game-vignette" />
           <div className="game-top-hud">
             <div className="location-pill"><MapPin size={13} /><span>KHULNA DISTRICT</span><i /></div>
-            <div className="build-pill">ALPHA 0.2</div>
+            <div className="build-pill">ALPHA 0.3</div>
           </div>
           <div className="crosshair" />
           <div className="game-bottom-hud">
