@@ -17,11 +17,12 @@ type OSMElement = {
 
 type OSMResponse = { elements: OSMElement[] }
 
-const CENTER = { lat: 22.8145, lon: 89.5480 }
-// Phase 2 expands the playable mapped area to several kilometres around central Khulna.
-// This is still a district-scale slice, not a complete citywide map.
-const BBOX = { south: 22.795, west: 89.523, north: 22.834, east: 89.573 }
-const MAP_CACHE_KEY = 'khulna-city-osm-v2'
+// Spawn is anchored near the coordinates shown in the user's Khulna map reference.
+const CENTER = { lat: 22.812758, lon: 89.540243 }
+// Phase 3 prioritizes the Sonadanga / Khulna City Medical College / Banorgati side
+// of central Khulna. This is a district-scale map, not the whole city.
+const BBOX = { south: 22.793, west: 89.515, north: 22.833, east: 89.565 }
+const MAP_CACHE_KEY = 'khulna-city-osm-v3'
 const MAP_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const METERS_PER_LAT = 111_320
 const METERS_PER_LON = 111_320 * Math.cos(CENTER.lat * Math.PI / 180)
@@ -245,12 +246,19 @@ export class KhulnaGame {
     let buildingIndex = 0
     let roadCount = 0
     let buildingCount = 0
+    let landmarkCount = 0
 
     for (const element of elements) {
       const points = element.geometry
       if (!points || points.length < 2) continue
       const coords = points.map(p => this.localPosition(p.lat, p.lon))
       const tags = element.tags ?? {}
+      const label = tags['name:en'] || tags.name || ''
+      const isLandmark = Boolean(label && (
+        tags.amenity || tags.shop || tags.tourism || tags.leisure === 'park' ||
+        tags.historic || tags.healthcare || tags.building === 'hospital' ||
+        tags.building === 'school' || tags.building === 'university'
+      ))
 
       if (tags.highway || tags.waterway) {
         const highway = tags.highway || ''
@@ -313,7 +321,7 @@ export class KhulnaGame {
 
         const levels = Number(tags['building:levels'] || 0)
         const heightTag = Number(tags.height || 0)
-        const height = Math.max(3.2, Math.min(55, heightTag || (levels > 0 ? levels * 3.1 : 6 + (buildingIndex % 5) * 1.7)))
+        const height = Math.max(3.2, Math.min(75, heightTag || (levels > 0 ? levels * 3.1 : tags.building === 'apartments' || tags.building === 'commercial' ? 12 : 6 + (buildingIndex % 5) * 1.7)))
         const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 1 })
         geometry.rotateX(-Math.PI / 2)
         geometry.computeVertexNormals()
@@ -327,6 +335,12 @@ export class KhulnaGame {
         building.position.y = 0.03
         building.userData.name = tags.name || tags['name:en'] || 'Mapped building'
         this.mapGroup.add(building)
+        if (isLandmark) {
+          const centerX = distinct.reduce((sum, p) => sum + p.x, 0) / distinct.length
+          const centerZ = distinct.reduce((sum, p) => sum + p.z, 0) / distinct.length
+          this.addLandmarkLabel(label, centerX, centerZ, height + 2)
+          landmarkCount++
+        }
 
         const xs = distinct.map(p => p.x), zs = distinct.map(p => p.z)
         this.obstacles.push({
@@ -340,8 +354,37 @@ export class KhulnaGame {
 
     // Source center is the initial spawn, with a small safety area around the player.
     this.obstacles = this.obstacles.filter(o => !(o.minX < 1.2 && o.maxX > -1.2 && o.minZ < 1.2 && o.maxZ > -1.2))
-    console.info(`Khulna OSM district loaded: ${roadCount} road segments, ${buildingCount} building footprints.`)
+    console.info(`Khulna OSM district loaded: ${roadCount} road segments, ${buildingCount} building footprints, ${landmarkCount} named landmarks.`)
     if (roadCount < 3 || buildingCount < 3) throw new Error('The returned map data was too small.')
+  }
+
+  private addLandmarkLabel(label: string, x: number, z: number, y: number) {
+    // Canvas-backed labels avoid external font/image dependencies and keep landmarks readable.
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) return
+    const fontSize = 44
+    context.font = `600 ${fontSize}px system-ui, sans-serif`
+    const textWidth = Math.ceil(context.measureText(label).width)
+    canvas.width = Math.min(1024, Math.max(256, textWidth + 48))
+    canvas.height = 88
+    context.font = `600 ${fontSize}px system-ui, sans-serif`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.lineWidth = 8
+    context.strokeStyle = 'rgba(14, 22, 25, 0.9)'
+    context.fillStyle = '#f7f7f0'
+    context.strokeText(label, canvas.width / 2, canvas.height / 2)
+    context.fillText(label, canvas.width / 2, canvas.height / 2)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false })
+    const sprite = new THREE.Sprite(material)
+    sprite.position.set(x, Math.min(y, 85), z)
+    sprite.scale.set(Math.max(8, Math.min(28, label.length * 0.65)), Math.max(2.4, Math.min(5.5, label.length * 0.13)), 1)
+    sprite.renderOrder = 5
+    sprite.userData.landmarkLabel = label
+    this.mapGroup.add(sprite)
   }
 
   private clearMapGroup() {
