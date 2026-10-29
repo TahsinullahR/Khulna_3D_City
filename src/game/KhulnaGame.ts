@@ -338,7 +338,7 @@ export class KhulnaGame {
       }
     }
     const onKeyUp = (event: KeyboardEvent) => this.keys.delete(event.code)
-    const onBlur = () => { this.keys.clear(); this.touchKeys.clear() }
+    const onBlur = () => { this.keys.clear(); this.touchKeys.clear(); this.pointerDown = false }
     const onPointerLock = () => { this.pointerLocked = document.pointerLockElement === this.canvas }
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || this.paused) return
@@ -405,11 +405,16 @@ export class KhulnaGame {
 
   pause() {
     this.paused = true
+    this.keys.clear()
+    this.touchKeys.clear()
+    this.pointerDown = false
     this.callbacks.onStatus('paused')
   }
 
   resume() {
     this.paused = false
+    this.keys.clear()
+    this.touchKeys.clear()
     this.callbacks.onStatus('ready')
     this.clock.getDelta()
     if (!this.raf && !this.destroyed) this.loop()
