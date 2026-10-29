@@ -6,3 +6,36 @@
 @media(max-width:800px){.site-shell{padding:0 4.5%}.topbar{height:70px}.topbar-label{display:none}.intro{padding:45px 0 38px;gap:20px}.intro h1{font-size:clamp(43px,8vw,62px);letter-spacing:-2.8px}.intro-copy>p{font-size:12px}.intro-stat{min-width:175px;padding:16px}.intro-stat>strong{font-size:20px}.game-shell{height:clamp(390px,65vw,560px)}.feature-row{gap:16px;padding:45px 0}.feature-row h3{font-size:14px}.footer p{display:none}}
 @media(max-width:560px){.site-shell{padding:0 16px}.topbar{height:66px}.brand-mark{width:35px;height:35px}.brand-copy strong{font-size:10px}.brand-copy small{font-size:8px}.topbar-right{gap:7px}.intro{display:block;padding:36px 0 29px}.intro h1{font-size:51px;margin-top:17px}.intro-copy>p{max-width:420px}.intro-stat{width:100%;max-width:none;margin-top:25px;display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;align-items:center}.intro-stat .stat-divider{display:none}.intro-stat>strong{font-size:17px}.intro-stat .map-stat{font-size:10px}.intro-stat>small{grid-column:2;grid-row:3}.intro-stat .stat-label:nth-of-type(2){grid-column:2;grid-row:1}.game-section{padding-top:18px}.game-heading h2{font-size:21px}.chip{display:none}.game-tools{gap:5px}.game-tools .icon-button{width:34px;height:34px}.game-shell{height:68vh;min-height:430px;max-height:650px;border-radius:11px}.game-top-hud{top:11px;left:11px;right:11px}.game-bottom-hud{left:11px;right:11px;bottom:11px}.desktop-hint{display:none}.touch-controls{display:flex;inset:auto 12px 72px}.game-caption{font-size:7px;letter-spacing:.5px;align-items:flex-start}.game-caption span:last-child{max-width:130px;text-align:right;line-height:1.6}.feature-row{grid-template-columns:1fr;gap:25px;padding:38px 0}.feature-row article{padding:0}.feature-row h3{margin:10px 0 6px;font-size:15px}.feature-row p{max-width:none}.footer{min-height:90px;flex-wrap:wrap;padding:17px 0;gap:12px}.footer>span{margin-left:auto;font-size:7px}.footer-brand .brand-copy strong{font-size:9px}.footer-brand .brand-copy small{font-size:7px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* Phase 17: launch directly into the playable city; no marketing landing page. */
+html, body, #root { width:100%; height:100%; min-height:100%; overflow:hidden; }
+.site-shell { width:100%; max-width:none; height:100%; padding:0; display:flex; flex-direction:column; }
+.topbar { flex:0 0 54px; height:54px; padding:0 18px; background:#0b1115; border-bottom:1px solid #29353a; }
+.brand-mark { border-radius:8px; background:#f2b544; color:#21190c; }
+.brand-copy small { color:#d0a65d; }
+.topbar-label { display:inline; }
+.game-section { flex:1 1 auto; min-height:0; padding:0; display:flex; flex-direction:column; }
+.game-heading { flex:0 0 52px; margin:0; padding:0 18px; background:#10181d; border-bottom:1px solid #2a373d; }
+.game-heading h2 { font-size:17px; margin:3px 0 0; letter-spacing:-.3px; }
+.game-section .section-kicker { color:#f2b544; }
+.game-shell { flex:1 1 auto; min-height:0; height:auto; max-height:none; border:0; border-radius:0; box-shadow:none; }
+.game-canvas { width:100%; height:100%; }
+.game-caption { flex:0 0 27px; padding:5px 14px; background:#0b1115; }
+.location-pill, .build-pill { background:#101a20e8; border-color:#f2b54455; }
+.build-pill { color:#f2c56c; }
+.avatar { background:#f2b544; color:#241b0c; }
+.speed-card { color:#f2c56c; }
+.speed-card svg { color:#f2c56c; }
+.primary-button { background:#f2b544; color:#241b0c; }
+.primary-button:hover { background:#ffd176; }
+.status-dot.ready, .live-dot, .tiny-dot, .game-caption i { background:#f2b544; box-shadow:0 0 10px #f2b54455; }
+.intro, .feature-row, .footer { display:none !important; }
+@media(max-width:560px) {
+  .topbar { flex-basis:48px; height:48px; padding:0 11px; }
+  .topbar-label { display:none; }
+  .game-heading { flex-basis:46px; padding:0 11px; }
+  .game-shell { height:auto; min-height:0; max-height:none; }
+  .game-caption { flex-basis:25px; }
+  .touch-controls { bottom:42px; }
+}
