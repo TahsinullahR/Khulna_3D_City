@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 11
+## Current milestone — Phase 12
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -11,7 +11,7 @@ Current features:
 - Third-person placeholder character with movement, sprint, jump, and follow camera.
 - A simple arcade car prototype with enter/exit interaction, forward/reverse throttle, steering, speed HUD feedback, footprint collision samples, braking, wheel spin, front wheel steering pivots, and adaptive chase camera.
 - Limited low-poly ambient traffic, capped at 10 agents for a lightweight prototype, following available long road geometries.
-- Phase 10 added smooth proximity braking. Phase 11 adds cautious speed reduction before sharp bends in each traffic agent's current route, plus a stronger response when traffic needs to slow. This is not full intersection topology, right-of-way, or collision physics.
+- Phase 10 added smooth proximity braking. Phase 11 adds cautious speed reduction before sharp bends in each traffic agent's current route. Phase 12 makes traffic-to-traffic following direction-aware: agents brake for cars ahead in a nearby corridor, including stopped cars, instead of treating every car at the same distance as an equal obstacle. This remains a lightweight geometric heuristic, not a full road graph, lane model, right-of-way system, or collision physics.
 - Keyboard/mouse controls and touch buttons for mobile browsers, including a DRIVE button.
 - A bounded OpenStreetMap request for road geometry, building footprints, mapped waterways, and tagged green areas around central Khulna.
 - Improved mapped road hierarchy, shoulder/edge treatment, and restrained center markings on wider roads.
@@ -142,3 +142,11 @@ Useful references:
 - Traffic agents inspect the next route segment and reduce speed before sharp bends when the bend is close.
 - Braking response is stronger than acceleration recovery, so cars slow more decisively when a nearby hazard or corner is detected.
 - This is a local route-geometry heuristic. It does not identify real road junctions, select legal turns, understand one-way streets or right-of-way, or provide physical collision resolution. Route chains may still connect the wrong road fragments and cars can overlap.
+
+
+## Phase 12 direction-aware traffic following
+
+- Traffic checks the direction of its current route segment and estimates whether another car is ahead or behind.
+- Cars reduce speed for a vehicle ahead within 8.5 world units when the lateral separation is within the configured corridor; stopped cars also count as obstacles.
+- Cars beside or behind an agent no longer trigger the same following-distance brake merely because they are close in Euclidean distance.
+- This is a local approximation. It does not model multiple lanes, vehicle dimensions, junction priorities, lane changes, or rigid-body collisions; unusual road chains can still cause poor behavior.
