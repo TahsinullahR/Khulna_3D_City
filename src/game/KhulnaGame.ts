@@ -33,8 +33,11 @@ export class KhulnaGame {
   private camera = new THREE.PerspectiveCamera(62, 1, 0.1, 6000)
   private player = new THREE.Group()
   private vehicle = new THREE.Group()
+  private wheelRollers: THREE.Group[] = []
+  private frontWheelPivots: THREE.Group[] = []
   private vehicleMode = false
   private vehicleSpeed = 0
+  private vehicleSteer = 0
   private playerBody: THREE.Mesh | null = null
   private playerHead: THREE.Mesh | null = null
   private keys = new Set<string>()
@@ -186,14 +189,19 @@ export class KhulnaGame {
     this.vehicle.add(bumper)
     for (const x of [-0.94, 0.94]) {
       for (const z of [-1.12, 1.12]) {
+        const pivot = new THREE.Group()
+        pivot.position.set(x, 0.39, z)
+        const assembly = new THREE.Group()
         const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.18, 12), tire)
         wheel.rotation.z = Math.PI / 2
-        wheel.position.set(x, 0.39, z)
-        this.vehicle.add(wheel)
+        assembly.add(wheel)
         const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.19, 10), hub)
         rim.rotation.z = Math.PI / 2
-        rim.position.copy(wheel.position)
-        this.vehicle.add(rim)
+        assembly.add(rim)
+        pivot.add(assembly)
+        this.vehicle.add(pivot)
+        this.wheelRollers.push(assembly)
+        if (z < 0) this.frontWheelPivots.push(pivot)
       }
     }
     for (const x of [-0.56, 0.56]) {
@@ -224,6 +232,8 @@ export class KhulnaGame {
       this.player.visible = true
       this.vehicleMode = false
       this.vehicleSpeed = 0
+      this.vehicleSteer = 0
+      this.frontWheelPivots.forEach(pivot => { pivot.rotation.y = 0 })
       this.callbacks.onMessage('On foot: WASD move, Shift sprint, Space jump. Press V near the car to drive.')
     }
   }
@@ -636,6 +646,8 @@ export class KhulnaGame {
       this.vehicleSpeed = THREE.MathUtils.clamp(this.vehicleSpeed, -7, 23)
       const steer = sideways
       const steerScale = Math.min(1, Math.abs(this.vehicleSpeed) / 3)
+      this.vehicleSteer = THREE.MathUtils.damp(this.vehicleSteer, steer * 0.42 * steerScale, 8, dt)
+      this.frontWheelPivots.forEach(pivot => { pivot.rotation.y = -this.vehicleSteer })
       const proposedYaw = this.vehicle.rotation.y - steer * steerScale * dt * (this.vehicleSpeed >= 0 ? 1.35 : -1.35)
       const carDirection = new THREE.Vector3(Math.sin(proposedYaw), 0, -Math.cos(proposedYaw))
       const next = this.vehicle.position.clone().addScaledVector(carDirection, this.vehicleSpeed * dt)
@@ -658,15 +670,18 @@ export class KhulnaGame {
         this.vehicle.position.z = next.z
         this.vehicle.rotation.y = proposedYaw
       } else {
-        this.vehicleSpeed = 0
+        this.vehicleSpeed = THREE.MathUtils.damp(this.vehicleSpeed, 0, 14, dt)
       }
+      const wheelSpin = this.vehicleSpeed * dt / 0.34
+      this.wheelRollers.forEach(roller => { roller.rotation.x += wheelSpin })
       this.player.position.copy(this.vehicle.position)
       this.player.rotation.y = this.vehicle.rotation.y
       this.velocity.set(carDirection.x * this.vehicleSpeed, 0, carDirection.z * this.vehicleSpeed)
+      const followDistance = 8.5 + Math.min(3.5, Math.abs(this.vehicleSpeed) * 0.12)
       const carCamera = new THREE.Vector3(
-        this.vehicle.position.x - Math.sin(this.vehicle.rotation.y) * 9,
-        this.vehicle.position.y + 4.3,
-        this.vehicle.position.z + Math.cos(this.vehicle.rotation.y) * 9,
+        this.vehicle.position.x - Math.sin(this.vehicle.rotation.y) * followDistance,
+        this.vehicle.position.y + 3.6 + Math.min(1.2, Math.abs(this.vehicleSpeed) * 0.04),
+        this.vehicle.position.z + Math.cos(this.vehicle.rotation.y) * followDistance,
       )
       this.camera.position.lerp(carCamera, 1 - Math.exp(-4.5 * dt))
       this.cameraTarget.set(this.vehicle.position.x, 1.15, this.vehicle.position.z)
