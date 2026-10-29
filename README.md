@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 15
+## Current milestone — Phase 16
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -171,3 +171,34 @@ Useful references:
 ## Phase 15 — Bangladesh traffic vehicle variety
 
 Ambient traffic now cycles through six low-poly vehicle types: auto-rickshaw, CNG auto-rickshaw, easybike, motorcycle, bus, and truck. Each type has a different silhouette, color, wheel layout, and approximate cruising speed. The existing traffic cap remains at 10 agents to keep the prototype lightweight. The models are procedural placeholders, not photorealistic assets; traffic variety depends on having enough usable road routes, and vehicles still share the same basic route-following heuristic.
+
+
+## Phase 16 — distance-based 3D model streaming
+
+- Added an optional GLB/GLTF model streamer that reads `public/models/manifest.json`.
+- Manifest entries support a model URL, world position, scale, Y rotation, per-entry load radius, and an optional lower-detail `lodUrl`.
+- Models are requested only when the player/vehicle is close enough, and active scene instances are removed after moving beyond the unload radius.
+- Manifest checks are throttled to avoid checking every animation frame. Missing manifests and failed model URLs are handled without blocking the base game.
+- The manifest currently contains no model entries. This phase adds the loading pipeline, **not hundreds of finished 3D assets**. Add properly licensed optimized `.glb` files and list each placement in the manifest before they appear in-game.
+- Shared cached GLTF geometry/material resources are disposed by the game's scene cleanup on shutdown. LOD uses the optional `lodUrl` when distance is greater than 115 world units; default load radius is 190 and active instances are removed beyond 240 units.
+
+### Model manifest example
+
+```json
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "sample-shop-01",
+      "url": "/models/shop.glb",
+      "lodUrl": "/models/shop-low.glb",
+      "position": [35, 0, -18],
+      "scale": 1,
+      "rotationY": 0,
+      "radius": 190
+    }
+  ]
+}
+```
+
+The example is documentation only; the referenced model files must exist in `public/models/` before use.
