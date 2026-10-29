@@ -349,6 +349,10 @@ export class KhulnaGame {
     let roadCount = 0
     let buildingCount = 0
     let landmarkCount = 0
+    const windowInstances: THREE.Matrix4[] = []
+    const windowGeometry = new THREE.BoxGeometry(0.72, 0.82, 0.055)
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: '#243f4b', roughness: 0.34, metalness: 0.12 })
+    this.materials.push(windowMaterial)
 
     for (const element of elements) {
       const points = element.geometry
@@ -442,6 +446,24 @@ export class KhulnaGame {
         building.position.y = 0.03
         building.userData.name = tags.name || tags['name:en'] || 'Mapped building'
         this.mapGroup.add(building)
+
+        // Add a restrained, low-cost window grid to compact buildings. Instances share
+        // one geometry/material so facade detail does not create a mesh per window.
+        const minX = Math.min(...distinct.map(p => p.x)), maxX = Math.max(...distinct.map(p => p.x))
+        const minZ = Math.min(...distinct.map(p => p.z)), maxZ = Math.max(...distinct.map(p => p.z))
+        const facadeWidth = maxX - minX
+        if (facadeWidth > 5 && facadeWidth < 38 && maxZ - minZ < 45 && height >= 5.5) {
+          const columns = Math.max(1, Math.min(6, Math.floor(facadeWidth / 3.2)))
+          const floors = Math.max(1, Math.min(12, Math.floor(height / 3.1)))
+          for (let floor = 0; floor < floors; floor++) {
+            for (let col = 0; col < columns; col++) {
+              const x = minX + (col + 1) * facadeWidth / (columns + 1)
+              const y = 1.45 + floor * 3.05
+              const matrix = new THREE.Matrix4().makeTranslation(x, y, minZ - 0.045)
+              windowInstances.push(matrix)
+            }
+          }
+        }
         if (isLandmark) {
           const centerX = distinct.reduce((sum, p) => sum + p.x, 0) / distinct.length
           const centerZ = distinct.reduce((sum, p) => sum + p.z, 0) / distinct.length
@@ -457,6 +479,14 @@ export class KhulnaGame {
         buildingIndex++
         buildingCount++
       }
+    }
+
+    if (windowInstances.length) {
+      const windows = new THREE.InstancedMesh(windowGeometry, windowMaterial, windowInstances.length)
+      windowInstances.forEach((matrix, index) => windows.setMatrixAt(index, matrix))
+      windows.instanceMatrix.needsUpdate = true
+      windows.frustumCulled = true
+      this.mapGroup.add(windows)
     }
 
     // Source center is the initial spawn, with a small safety area around the player.
