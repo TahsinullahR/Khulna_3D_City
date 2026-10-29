@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "notes": "Add licensed .glb/.gltf assets here. Paths are relative to the deployed site root. Keep this list empty until real assets are added.",
+  "models": []
+}
