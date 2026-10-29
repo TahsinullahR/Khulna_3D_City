@@ -180,10 +180,10 @@ export class KhulnaGame {
   }
 
   private setupVehicle() {
-    const paint = new THREE.MeshStandardMaterial({ color: '#b9d66d', metalness: 0.35, roughness: 0.38 })
+    const paint = new THREE.MeshStandardMaterial({ color: '#d84b35', metalness: 0.22, roughness: 0.42 })
     const glass = new THREE.MeshStandardMaterial({ color: '#233943', metalness: 0.18, roughness: 0.25 })
     const tire = new THREE.MeshStandardMaterial({ color: '#161b1d', roughness: 0.9 })
-    const hub = new THREE.MeshStandardMaterial({ color: '#aab5b3', metalness: 0.7, roughness: 0.28 })
+    const hub = new THREE.MeshStandardMaterial({ color: '#d8d6ca', metalness: 0.55, roughness: 0.3 })
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.62, 3.5), paint)
     body.position.y = 0.72
     this.vehicle.add(body)
@@ -196,6 +196,24 @@ export class KhulnaGame {
     const bumper = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.16, 0.14), hub)
     bumper.position.set(0, 0.49, -1.78)
     this.vehicle.add(bumper)
+    // Distinctive grille, headlamps, rear lamps and side accent make the player car
+    // read as a designed vehicle instead of a plain collection of boxes.
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.18, 0.035), new THREE.MeshStandardMaterial({ color: '#252c30', roughness: 0.55 }))
+    grille.position.set(0, 0.68, -1.77)
+    this.vehicle.add(grille)
+    const headlamp = new THREE.MeshStandardMaterial({ color: '#fff0b5', emissive: '#8b6425', emissiveIntensity: 0.25 })
+    const tailLamp = new THREE.MeshStandardMaterial({ color: '#d92f2f', emissive: '#7a1010', emissiveIntensity: 0.2 })
+    for (const x of [-0.62, 0.62]) {
+      const front = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.13, 0.045), headlamp)
+      front.position.set(x, 0.83, -1.77)
+      this.vehicle.add(front)
+      const rear = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.13, 0.045), tailLamp)
+      rear.position.set(x, 0.78, 1.77)
+      this.vehicle.add(rear)
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.09, 2.2), hub)
+      stripe.position.set(x < 0 ? -0.906 : 0.906, 0.76, 0.05)
+      this.vehicle.add(stripe)
+    }
     for (const x of [-0.94, 0.94]) {
       for (const z of [-1.12, 1.12]) {
         const pivot = new THREE.Group()
@@ -326,7 +344,7 @@ export class KhulnaGame {
     const laneMaterial = new THREE.MeshStandardMaterial({ color: '#d8d1b6', roughness: 0.9 })
     const waterMaterial = new THREE.MeshStandardMaterial({ color: '#5e9fa8', roughness: 0.55, metalness: 0.05 })
     const greenMaterial = new THREE.MeshStandardMaterial({ color: '#687f5b', roughness: 1, side: THREE.DoubleSide })
-    const buildingPalette = ['#b9b5aa', '#c9c2b5', '#aeb9b5', '#d2c8b8', '#a8ada8', '#c5b7a8']
+    const buildingPalette = ['#e7c9a0', '#d8b69a', '#b7c8c3', '#e0d5bd', '#d9a9a0', '#b6c7dc', '#d8c68f', '#c6b4d9', '#d5d0c4', '#a9c6ae']
     let buildingIndex = 0
     let roadCount = 0
     let buildingCount = 0
@@ -649,7 +667,7 @@ export class KhulnaGame {
     this.trafficRoutes = routes
     const count = Math.min(10, routes.length)
     const kinds: TrafficVehicleKind[] = ['auto-rickshaw', 'cng', 'easybike', 'motorcycle', 'bus', 'truck']
-    const colors = ['#e6b94c', '#168b55', '#ed6a35', '#20252b', '#2475b8', '#c5c8c4']
+    const colors = ['#f2c230', '#008f54', '#ef633d', '#23272b', '#1679bd', '#e8e8df', '#d83c32', '#f1eee4', '#2d8f9b', '#a4b1c0']
     for (let i = 0; i < count; i++) {
       const route = routes[i]
       const kind = kinds[i % kinds.length]
