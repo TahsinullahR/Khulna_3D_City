@@ -2,9 +2,9 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 8
+## Current milestone — Phase 9
 
-The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected longer OSM street geometries or fallback avenues. Phase 8 removes endpoint wraparound teleporting and adds simple nearby-agent gap slowdown with gradual speed recovery. Agents stop at open route ends. This is not lane-aware road navigation or full traffic simulation.
+The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
 Current features:
 - Responsive website shell and embedded WebGL canvas.
@@ -109,7 +109,7 @@ Useful references:
 
 ## Phase 7 ambient traffic
 
-- A capped group of low-poly vehicles advances along selected road geometries available in loaded map data.
+- A capped group of low-poly vehicles advances along chained road geometries available in loaded map data.
 - If the map falls back to generated streets, traffic uses simple avenue routes. Vehicles stop at open route ends rather than teleporting to route start.
 - Ambient vehicles use simplified fixed speeds. They do not yet perform route planning, lane changing, traffic-signal behavior, realistic avoidance, or robust vehicle-to-vehicle collisions.
 - Nearby ambient vehicles are temporarily hidden around the player's immediate space as a basic overlap guard. Simple proximity slowdown helps reduce close following, but does not detect lane, direction, or right-of-way.
@@ -120,3 +120,10 @@ Useful references:
 - Ambient cars no longer wrap instantly from an open route's last segment to its first; they stop at the endpoint.
 - Simple nearby-agent distance checks reduce speed in close proximity, with gradual recovery toward each agent's cruising speed.
 - This approximation does not yet guarantee lane-correct following, prevent every overlap, or support intersections and signals.
+
+
+## Phase 9 road route chaining
+
+- The traffic setup attempts to stitch OSM road fragments when their endpoints are within 12 world units.
+- It can reverse a fragment to connect matching endpoints and snaps the joining point for smooth interpolation.
+- It does not yet model intersection topology, one-way restrictions, lane directions, turn rules, or guaranteed route continuity across a whole city. Traffic may still stop at open chain ends.
