@@ -16,7 +16,7 @@ type OSMElement = {
 }
 
 type OSMResponse = { elements: OSMElement[] }
-type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number; stopped: boolean }
+type TrafficAgent = { root: THREE.Group; route: THREE.Vector3[]; segment: number; progress: number; speed: number; cruiseSpeed: number; stopped: boolean }
 
 // Spawn is anchored near the coordinates shown in the user's Khulna map reference.
 const CENTER = { lat: 22.812758, lon: 89.540243 }
@@ -548,7 +548,7 @@ export class KhulnaGame {
       const start = route[segment].clone()
       root.position.copy(start)
       this.scene.add(root)
-      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, stopped: false })
+      this.traffic.push({ root, route, segment, progress: 0, speed: 3.5 + (i % 4) * 0.75, cruiseSpeed: 3.5 + (i % 4) * 0.75, stopped: false })
       // Route data can include dense OSM vertices. Each agent advances segment by segment.
       void routeLength
     }
@@ -592,14 +592,17 @@ export class KhulnaGame {
       }
       // Basic following gap: slow down when another agent is very close.
       // Not a full lane-aware or intersection-aware traffic simulation.
+      let closeAgent = false
       for (const other of this.traffic) {
         if (other === agent || other.stopped) continue
         const gap = agent.root.position.distanceTo(other.root.position)
         if (gap < 4.5) {
+          closeAgent = true
           agent.speed = Math.max(1.2, agent.speed - (4.5 - gap) * dt * 1.8)
           break
         }
       }
+      if (!closeAgent) agent.speed = Math.min(agent.cruiseSpeed, agent.speed + dt * 0.9)
       const d = agent.root.position.distanceTo(this.vehicleMode ? this.vehicle.position : this.player.position)
       agent.root.visible = !agent.stopped && d > 3.8
     }
