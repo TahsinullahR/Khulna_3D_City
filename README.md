@@ -2,7 +2,7 @@
 
 A browser-based 3D game prototype inspired by Khulna, Bangladesh. Built with React, TypeScript, Three.js, and Vite.
 
-## Current milestone — Phase 14
+## Current milestone — Phase 15
 
 The playable prototype is now centered near 22.812758, 89.540243, matching the coordinate visible in the supplied Khulna map reference. It requests a district-scale area around the Sonadanga / Khulna City Medical College / Banorgati side of central Khulna, adds available named landmark labels, and caches map data in browser local storage for up to 24 hours when storage is available. The app remains an early prototype, not a full city reconstruction. The prototype includes lightweight ambient traffic using selected OSM street geometries or fallback avenues. Phase 9 joins nearby road-way fragments whose endpoints are within a small threshold into longer continuous routes, reversing fragments when needed and snapping joined endpoints to remove tiny gaps. Traffic still stops at the end of each assembled open route; this is not a complete road graph or lane-aware traffic simulation.
 
@@ -166,3 +166,8 @@ Useful references:
 - At a route endpoint, route scoring adds a penalty to immediately returning to the previous chain, encouraging a different nearby continuation when one is available.
 - This penalty is a preference rather than a hard restriction, so a reverse connection can still be chosen if it is the best available option.
 - The behavior remains endpoint-based. It does not establish legal junction turns, split road crossings into nodes, or guarantee that the selected connection is a real drivable road.
+
+
+## Phase 15 — Bangladesh traffic vehicle variety
+
+Ambient traffic now cycles through six low-poly vehicle types: auto-rickshaw, CNG auto-rickshaw, easybike, motorcycle, bus, and truck. Each type has a different silhouette, color, wheel layout, and approximate cruising speed. The existing traffic cap remains at 10 agents to keep the prototype lightweight. The models are procedural placeholders, not photorealistic assets; traffic variety depends on having enough usable road routes, and vehicles still share the same basic route-following heuristic.
