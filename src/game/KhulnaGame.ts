@@ -73,7 +73,7 @@ export class KhulnaGame {
       if (this.destroyed) return
       if (loaded) {
         this.callbacks.onMapSource('osm')
-        this.callbacks.onMessage('Real OpenStreetMap road and building geometry loaded.')
+        this.callbacks.onMessage('Mapped roads, buildings and available green/water features loaded.')
       } else {
         // An incomplete OSM response may have created a few meshes before validation failed.
         // Clear it before constructing the fallback so the scene never mixes partial datasets.
