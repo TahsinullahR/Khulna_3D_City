@@ -631,12 +631,27 @@ export class KhulnaGame {
       this.vehicleSpeed = THREE.MathUtils.clamp(this.vehicleSpeed, -7, 23)
       const steer = sideways
       const steerScale = Math.min(1, Math.abs(this.vehicleSpeed) / 3)
-      this.vehicle.rotation.y -= steer * steerScale * dt * (this.vehicleSpeed >= 0 ? 1.65 : -1.65)
-      const carDirection = new THREE.Vector3(Math.sin(this.vehicle.rotation.y), 0, -Math.cos(this.vehicle.rotation.y))
+      const proposedYaw = this.vehicle.rotation.y - steer * steerScale * dt * (this.vehicleSpeed >= 0 ? 1.35 : -1.35)
+      const carDirection = new THREE.Vector3(Math.sin(proposedYaw), 0, -Math.cos(proposedYaw))
       const next = this.vehicle.position.clone().addScaledVector(carDirection, this.vehicleSpeed * dt)
-      if (!this.collides(next.x, next.z) && !this.collides(next.x + 0.75, next.z) && !this.collides(next.x - 0.75, next.z)) {
+      // Approximate the car footprint with oriented corner and side samples.
+      // This remains arcade collision, but reduces clipping through mapped buildings.
+      const forwardAxis = carDirection
+      const rightAxis = new THREE.Vector3(Math.cos(proposedYaw), 0, Math.sin(proposedYaw))
+      const testPoints = [
+        next.clone().addScaledVector(forwardAxis, 1.65).addScaledVector(rightAxis, 0.9),
+        next.clone().addScaledVector(forwardAxis, 1.65).addScaledVector(rightAxis, -0.9),
+        next.clone().addScaledVector(forwardAxis, -1.65).addScaledVector(rightAxis, 0.9),
+        next.clone().addScaledVector(forwardAxis, -1.65).addScaledVector(rightAxis, -0.9),
+        next.clone().addScaledVector(forwardAxis, 1.65),
+        next.clone().addScaledVector(forwardAxis, -1.65),
+        next.clone().addScaledVector(rightAxis, 0.9),
+        next.clone().addScaledVector(rightAxis, -0.9),
+      ]
+      if (testPoints.every(point => !this.collides(point.x, point.z))) {
         this.vehicle.position.x = next.x
         this.vehicle.position.z = next.z
+        this.vehicle.rotation.y = proposedYaw
       } else {
         this.vehicleSpeed = 0
       }
