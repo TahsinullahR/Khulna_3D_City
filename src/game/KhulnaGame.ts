@@ -610,10 +610,28 @@ export class KhulnaGame {
         if (other === agent || other.stopped) continue
         const gap = agent.root.position.distanceTo(other.root.position)
         if (gap < 5.2) {
-          targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((gap - 2.1) * 1.15, 0.25, agent.cruiseSpeed))
+          targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((gap - 2.1) * 1.15, 0, agent.cruiseSpeed))
         }
       }
-      const response = targetSpeed < agent.speed ? 3.8 : 0.85
+
+      // Phase 11: anticipate sharp route bends and slow before reaching the corner.
+      // This is junction-approach caution, not map-topology-aware turn planning.
+      const from = agent.route[agent.segment]
+      const to = agent.route[agent.segment + 1]
+      const next = agent.route[agent.segment + 2]
+      if (from && to && next) {
+        const segmentLength = from.distanceTo(to)
+        const remainingToCorner = Math.max(0, segmentLength - agent.progress)
+        const incoming = to.clone().sub(from).normalize()
+        const outgoing = next.clone().sub(to).normalize()
+        const turnAngle = Math.acos(THREE.MathUtils.clamp(incoming.dot(outgoing), -1, 1))
+        if (turnAngle > 0.42 && remainingToCorner < 12) {
+          const cornerSpeed = THREE.MathUtils.clamp(1.2 + remainingToCorner * 0.45, 1.2, agent.cruiseSpeed)
+          targetSpeed = Math.min(targetSpeed, cornerSpeed)
+        }
+      }
+
+      const response = targetSpeed < agent.speed ? 4.5 : 0.85
       agent.speed = THREE.MathUtils.damp(agent.speed, targetSpeed, response, dt)
 
       let remaining = agent.speed * dt
