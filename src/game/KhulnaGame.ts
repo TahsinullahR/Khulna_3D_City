@@ -606,11 +606,23 @@ export class KhulnaGame {
       if (playerGap < 6.5) {
         targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((playerGap - 2.2) * 1.25, 0, agent.cruiseSpeed))
       }
-      for (const other of this.traffic) {
-        if (other === agent || other.stopped) continue
-        const gap = agent.root.position.distanceTo(other.root.position)
-        if (gap < 5.2) {
-          targetSpeed = Math.min(targetSpeed, THREE.MathUtils.clamp((gap - 2.1) * 1.15, 0, agent.cruiseSpeed))
+      // Phase 12: only brake for traffic that is ahead and approximately in the
+      // same corridor. This avoids reacting equally to cars beside or behind us.
+      // Stopped agents remain obstacles so following traffic can slow before them.
+      const currentFrom = agent.route[agent.segment]
+      const currentTo = agent.route[agent.segment + 1]
+      if (currentFrom && currentTo) {
+        const forward = currentTo.clone().sub(currentFrom).normalize()
+        for (const other of this.traffic) {
+          if (other === agent) continue
+          const relative = other.root.position.clone().sub(agent.root.position)
+          const forwardGap = relative.dot(forward)
+          if (forwardGap <= 0 || forwardGap >= 8.5) continue
+          const lateralSq = Math.max(0, relative.lengthSq() - forwardGap * forwardGap)
+          if (lateralSq > 2.8 * 2.8) continue
+          const safeGap = other.stopped ? 2.6 : 2.2
+          const followingSpeed = THREE.MathUtils.clamp((forwardGap - safeGap) * 1.1, 0, agent.cruiseSpeed)
+          targetSpeed = Math.min(targetSpeed, followingSpeed)
         }
       }
 
